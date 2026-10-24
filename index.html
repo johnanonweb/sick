@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#050505">
 <meta name="description" content="Sick Fetish video archive - Browse curated videos and categories.">
-<link rel="canonical" href="videos.html">
+<link rel="canonical" href="index.html">
 <title>Sick Fetish Video Archive</title>
 
 <style>
@@ -582,7 +582,7 @@ body {
 
 <header class="header">
     <div class="header-top">
-        <a id="logo" href="videos.html" class="logo" title="Home">
+        <a id="logo" href="index.html" class="logo" title="Home">
             <img src="./logo.jpeg" alt="Sick Fetish">
         </a>
 
@@ -868,7 +868,7 @@ function renderCategoryNavs() {
             const isActive = (!activeSearchQuery && activeCategory === cat.name);
             pill.className = "cat-pill" + (isActive ? " active" : "");
             pill.textContent = cat.name;
-            pill.href = (cat.name === "All") ? "videos.html" : `videos.html?cat=${encodeURIComponent(cat.name)}`;
+            pill.href = (cat.name === "All") ? "index.html" : `index.html?cat=${encodeURIComponent(cat.name)}`;
             pill.addEventListener("click", (e) => {
                 e.preventDefault();
                 selectCategory(cat.name);
@@ -886,7 +886,7 @@ function renderCategoryNavs() {
             pill.className = "cat-pill temp" + (isActive ? " active" : "");
             pill.textContent = `🔍 ${query}`;
             pill.title = query;
-            pill.href = `videos.html?q=${encodeURIComponent(query)}`;
+            pill.href = `index.html?q=${encodeURIComponent(query)}`;
             pill.addEventListener("click", (e) => {
                 e.preventDefault();
                 triggerSearch(query);
@@ -902,7 +902,7 @@ function renderCategoryNavs() {
         const btn = document.createElement("a");
         const isActive = (!activeSearchQuery && activeCategory === cat.name);
         btn.className = "drawer-item" + (isActive ? " active" : "");
-        btn.href = (cat.name === "All") ? "videos.html" : `videos.html?cat=${encodeURIComponent(cat.name)}`;
+        btn.href = (cat.name === "All") ? "index.html" : `index.html?cat=${encodeURIComponent(cat.name)}`;
 
         let matchCount = videos.length;
         if (cat.keywords.length > 0) {
@@ -928,7 +928,7 @@ function renderCategoryNavs() {
             const btn = document.createElement("a");
             const isActive = (activeSearchQuery === query || activeCategory === query);
             btn.className = "drawer-item" + (isActive ? " active" : "");
-            btn.href = `videos.html?q=${encodeURIComponent(query)}`;
+            btn.href = `index.html?q=${encodeURIComponent(query)}`;
 
             const matchCount = videos.filter(v => v.title.toLowerCase().includes(query.toLowerCase())).length;
 
@@ -1206,7 +1206,7 @@ search.addEventListener("input", (e) => {
     matches.forEach(video => {
         const item = document.createElement("a");
         item.className = "suggestion-item";
-        item.href = `videos.html?q=${encodeURIComponent(video.title)}`;
+        item.href = `index.html?q=${encodeURIComponent(video.title)}`;
         item.innerHTML = `🔍 <span>${video.title}</span>`;
         item.addEventListener("click", (e) => {
             e.preventDefault();
