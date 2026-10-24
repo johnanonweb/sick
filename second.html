@@ -798,11 +798,11 @@ drawerBackdrop.addEventListener("click", () => toggleDrawer(false));
 
 function navigateToArchive(query, cat) {
     if (query) {
-        window.location.href = `videos.html?q=${encodeURIComponent(query)}`;
+        window.location.href = `index.html?q=${encodeURIComponent(query)}`;
     } else if (cat && cat !== "All") {
-        window.location.href = `videos.html?cat=${encodeURIComponent(cat)}`;
+        window.location.href = `index.html?cat=${encodeURIComponent(cat)}`;
     } else {
-        window.location.href = `videos.html`;
+        window.location.href = `index.html`;
     }
 }
 
@@ -819,7 +819,7 @@ function renderCategoryNavs() {
             const isActive = (!activeFromQ && activeFromCat === cat.name);
             pill.className = "cat-pill" + (isActive ? " active" : "");
             pill.textContent = cat.name;
-            pill.href = (cat.name === "All") ? "videos.html" : `videos.html?cat=${encodeURIComponent(cat.name)}`;
+            pill.href = (cat.name === "All") ? "index.html" : `index.html?cat=${encodeURIComponent(cat.name)}`;
             pill.addEventListener("click", (e) => {
                 e.preventDefault();
                 navigateToArchive(null, cat.name);
@@ -837,7 +837,7 @@ function renderCategoryNavs() {
             pill.className = "cat-pill temp" + (isActive ? " active" : "");
             pill.textContent = `🔍 ${query}`;
             pill.title = query;
-            pill.href = `videos.html?q=${encodeURIComponent(query)}`;
+            pill.href = `index.html?q=${encodeURIComponent(query)}`;
             pill.addEventListener("click", (e) => {
                 e.preventDefault();
                 navigateToArchive(query, null);
@@ -853,7 +853,7 @@ function renderCategoryNavs() {
         const btn = document.createElement("a");
         const isActive = (!activeFromQ && activeFromCat === cat.name);
         btn.className = "drawer-item" + (isActive ? " active" : "");
-        btn.href = (cat.name === "All") ? "videos.html" : `videos.html?cat=${encodeURIComponent(cat.name)}`;
+        btn.href = (cat.name === "All") ? "index.html" : `index.html?cat=${encodeURIComponent(cat.name)}`;
 
         let matchCount = allVideos.length;
         if (cat.keywords.length > 0) {
@@ -879,7 +879,7 @@ function renderCategoryNavs() {
             const btn = document.createElement("a");
             const isActive = (activeFromQ === query);
             btn.className = "drawer-item" + (isActive ? " active" : "");
-            btn.href = `videos.html?q=${encodeURIComponent(query)}`;
+            btn.href = `index.html?q=${encodeURIComponent(query)}`;
 
             const matchCount = allVideos.filter(v => v.title.toLowerCase().includes(query.toLowerCase())).length;
 
@@ -1162,7 +1162,7 @@ randomButton.addEventListener("click", () => {
     window.location.href = `second.html?id=${encodeURIComponent(randomVideo.id)}`;
 });
 
-logo.addEventListener("click", () => { window.location.href = "videos.html"; });
+logo.addEventListener("click", () => { window.location.href = "index.html"; });
 
 initWatchPage();
 </script>
