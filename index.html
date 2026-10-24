@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050505">
+<meta name="description" content="Sick Fetish video archive - Browse curated videos and categories.">
+<link rel="canonical" href="videos.html">
+<title>Sick Fetish Video Archive</title>
+
+<style>
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    margin: 0;
+    min-height: 100vh;
+    padding-bottom: 70px;
+    background: radial-gradient(circle at 10% 5%, rgba(255,255,255,.018), transparent 24%), radial-gradient(circle at 90% 80%, rgba(255,255,255,.012), transparent 26%), #050505;
+    color: #dddddd;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow-x: hidden;
+}
+
+:root {
+    --bg: #050505;
+    --surface: #0b0b0b;
+    --surface-2: #111111;
+    --border: #242424;
+    --border-light: #2d2d2d;
+    --text: #dddddd;
+    --text-bright: #eeeeee;
+    --muted: #666666;
+    --muted-dark: #454545;
+}
+
+/* HEADER & NAVBAR */
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(5,5,5,.95);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid #171717;
+}
+
+.header-top {
+    width: min(1400px,94%);
+    min-height: 70px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 0;
+}
+
+.logo {
+    width: 170px;
+    aspect-ratio: 1600 / 380;
+    flex-shrink: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+}
+
+.logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    transition: transform .2s ease;
+}
+
+.logo:hover img { transform: scale(1.025); }
+
+.search-form-wrapper {
+    position: relative;
+    flex: 1;
+    max-width: 680px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+}
+
+.search-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.search {
+    width: 100%;
+    height: 42px;
+    padding: 0 44px 0 16px;
+    background: #090909;
+    color: #dddddd;
+    border: 1px solid #242424;
+    border-radius: 10px 0 0 10px;
+    outline: none;
+    font-size: 14px;
+    box-shadow: 2px 2px 0 #020202;
+    transition: border-color .2s ease, background .2s ease;
+}
+
+.search::placeholder { color: #555555; }
+.search:focus { border-color: #3b3b3b; background: #0d0d0d; }
+
+.search-submit {
+    height: 42px;
+    padding: 0 18px;
+    background: #141414;
+    color: #aaaaaa;
+    border: 1px solid #242424;
+    border-left: 0;
+    border-radius: 0 10px 10px 0;
+    cursor: pointer;
+    font-size: 14px;
+    box-shadow: 2px 2px 0 #020202;
+    transition: background .15s ease, color .15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-submit:hover { background: #1c1c1c; color: #ffffff; }
+
+.search-suggestions {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #0a0a0a;
+    border: 1px solid #242424;
+    border-radius: 11px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    z-index: 150;
+    display: none;
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.search-suggestions.open { display: block; }
+
+.suggestion-item {
+    padding: 11px 16px;
+    font-size: 13px;
+    color: #cccccc;
+    cursor: pointer;
+    border-bottom: 1px solid #141414;
+    transition: background .15s ease, color .15s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.suggestion-item:last-child { border-bottom: 0; }
+.suggestion-item:hover { background: #161616; color: #ffffff; }
+
+.search-cancel {
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: transparent;
+    color: #555555;
+    cursor: pointer;
+    font-size: 18px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-form-wrapper.has-text .search-cancel { display: flex; }
+.search-cancel:hover { color: #dddddd; }
+
+.random-button {
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border: 1px solid #292929;
+    border-radius: 10px;
+    background: #0b0b0b;
+    color: #666666;
+    cursor: pointer;
+    font-size: 20px;
+    box-shadow: 2px 2px 0 #020202;
+    transition: .2s ease;
+}
+
+.random-button:hover { color: #dddddd; background: #111111; transform: rotate(8deg); }
+
+/* POPULAR CATEGORIES & RECENT SEARCHES ROWS */
+.header-nav {
+    border-top: none;
+    background: #080808;
+    display: flex;
+    flex-direction: column;
+}
+
+.header-nav-inner {
+    width: min(1400px,94%);
+    margin: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    width: 100%;
+    max-width: 1400px;
+    padding-left: 3%;
+    padding-right: 3%;
+}
+
+.drawer-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: #111111;
+    border: 1px solid #282828;
+    border-radius: 8px;
+    color: #e1e1e1;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background .18s ease, border-color .18s ease;
+    box-shadow: 2px 2px 0 #020202;
+}
+
+.drawer-toggle-btn:hover { background: #1a1a1a; border-color: #383838; }
+
+/* CATEGORY SCROLL CONTAINER & BUTTONS */
+.categories-scroll-container {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    position: relative;
+}
+
+.popular-categories {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+    scroll-behavior: smooth;
+}
+
+.popular-categories::-webkit-scrollbar { display: none; }
+
+.cat-scroll-btn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    background: #111111;
+    border: 1px solid #242424;
+    border-radius: 50%;
+    color: #aaaaaa;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s ease, color .15s ease;
+    user-select: none;
+}
+
+.cat-scroll-btn:hover { background: #1c1c1c; color: #ffffff; }
+
+.recent-searches-row {
+    border-top: none;
+    background: #060606;
+    display: none;
+}
+.recent-searches-row.visible { display: block; }
+
+.recent-searches-inner {
+    width: min(1400px, 94%);
+    margin: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    width: 100%;
+    max-width: 1400px;
+    padding-left: 3%;
+    padding-right: 3%;
+}
+
+.recent-label {
+    font-size: 11px;
+    color: #555555;
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.recent-searches-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+}
+
+.recent-searches-container::-webkit-scrollbar { display: none; }
+
+.cat-pill {
+    padding: 7px 16px;
+    background: transparent;
+    border: 1px solid #1a1a1a;
+    border-radius: 20px;
+    color: #888888;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all .18s ease;
+    user-select: none;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.cat-pill:hover { color: #dddddd; border-color: #2e2e2e; background: #101010; }
+.cat-pill.active { background: #dddddd; color: #050505; border-color: #dddddd; font-weight: 700; }
+.cat-pill.temp { border-style: dashed; border-color: #2d2d2d; color: #999999; }
+.cat-pill.temp.active { background: #dddddd; color: #050505; border-style: solid; }
+
+/* SIDEBAR DRAWER */
+.drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease;
+}
+
+.drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+
+.sidebar-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 300px;
+    max-width: 85vw;
+    background: #090909;
+    border-right: 1px solid #222222;
+    z-index: 201;
+    transform: translateX(-100%);
+    transition: transform .28s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 8px 0 32px rgba(0,0,0,0.8);
+}
+
+.sidebar-drawer.open { transform: translateX(0); }
+
+.drawer-header {
+    padding: 22px 20px;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.drawer-title { margin: 0; font-size: 17px; color: #eeeeee; font-weight: 700; }
+
+.drawer-close {
+    background: transparent;
+    border: 0;
+    color: #666666;
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    transition: color .15s ease;
+}
+
+.drawer-close:hover { color: #ffffff; }
+
+.drawer-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 12px;
+}
+
+.drawer-section-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: #444444;
+    margin: 18px 0 8px 12px;
+    font-weight: 700;
+}
+
+.drawer-item {
+    width: 100%;
+    text-align: left;
+    padding: 12px 16px;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    color: #aaaaaa;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background .15s ease, color .15s ease;
+    margin-bottom: 4px;
+    text-decoration: none;
+}
+
+.drawer-item:hover { background: #141414; color: #ffffff; }
+.drawer-item.active { background: #1e1e1e; color: #ffffff; font-weight: 700; border-left: 3px solid #dddddd; }
+
+.drawer-item-count {
+    font-size: 11px;
+    color: #444444;
+    background: #050505;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid #1a1a1a;
+}
+
+/* MAIN SECTION & GRID */
+.main {
+    width: min(1400px,94%);
+    margin: auto;
+    padding: 32px 0 0;
+}
+
+.top-bar { margin-bottom: 26px; }
+.heading { margin: 0; color: #e1e1e1; font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+.status { margin-top: 8px; color: #484848; font-size: 11px; }
+
+.loader {
+    width: 31px;
+    height: 31px;
+    margin: 55px auto;
+    border: 3px solid #272727;
+    border-top-color: #b0b0b0;
+    border-radius: 50%;
+    animation: spin .75s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(5,minmax(0,1fr));
+    gap: 28px 16px;
+}
+
+.card {
+    min-width: 0;
+    cursor: pointer;
+    transition: transform .2s ease;
+    text-decoration: none;
+    display: block;
+}
+
+.card:hover { transform: translateY(-4px); }
+
+.thumbnail {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: #0f0f0f;
+    border: 1px solid #222222;
+    border-radius: 10px;
+    box-shadow: 4px 5px 0 #020202;
+}
+
+.thumbnail img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    opacity: .9;
+    transition: transform .35s ease, opacity .2s ease;
+}
+
+.card:hover .thumbnail img { transform: scale(1.05); opacity: .75; }
+
+.title {
+    padding: 10px 2px 0;
+    color: #cfcfcf;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.card:hover .title { color: #eeeeee; }
+
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 56px 0 20px;
+}
+
+.page-button {
+    min-width: 38px;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid #242424;
+    border-radius: 9px;
+    background: #090909;
+    color: #555555;
+    cursor: pointer;
+    font-size: 12px;
+    transition: .18s ease;
+}
+
+.page-button:hover { color: #cccccc; background: #111111; }
+.page-button.active { color: #111111; background: #dddddd; border-color: #dddddd; font-weight: 700; }
+
+.empty { display: none; padding: 100px 20px; text-align: center; color: #444444; font-size: 13px; }
+
+@media (max-width:1200px) { .grid { grid-template-columns: repeat(4,minmax(0,1fr)); } }
+@media (max-width:900px) { .grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
+
+/* RESPONSIVE BROADER MOBILE SEARCH BAR & HEADER */
+@media (max-width:650px) {
+    .grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .header-top {
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 0;
+    }
+    .logo { width: 140px; }
+    .search-form-wrapper {
+        order: 3;
+        flex-basis: 100%;
+        max-width: 100%;
+        margin-top: 2px;
+    }
+    .search { height: 44px; font-size: 14px; }
+    .search-submit { height: 44px; padding: 0 20px; }
+    .random-button { order: 2; }
+}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+    <div class="header-top">
+        <a id="logo" href="videos.html" class="logo" title="Home">
+            <img src="./logo.jpeg" alt="Sick Fetish">
+        </a>
+
+        <form id="searchForm" class="search-form-wrapper" action="#" onsubmit="return false;">
+            <div id="searchWrapper" class="search-wrapper">
+                <input id="search" class="search" type="search" placeholder="Search videos..." autocomplete="off">
+                <button id="searchCancel" class="search-cancel" type="button">×</button>
+                <div id="searchSuggestions" class="search-suggestions"></div>
+            </div>
+            <button id="searchSubmit" class="search-submit" type="submit">🔍</button>
+        </form>
+
+        <button id="randomButton" class="random-button" type="button" title="Random video">⤨</button>
+    </div>
+
+    <div class="header-nav">
+        <div class="header-nav-inner">
+            <button id="openDrawerBtn" class="drawer-toggle-btn" type="button">
+                <span>☰</span> All Categories
+            </button>
+            <div class="categories-scroll-container">
+                <button id="catScrollLeft" class="cat-scroll-btn" type="button">❮</button>
+                <div id="popularCategories" class="popular-categories"></div>
+                <button id="catScrollRight" class="cat-scroll-btn" type="button">❯</button>
+            </div>
+        </div>
+
+        <div id="recentSearchesRow" class="recent-searches-row">
+            <div class="recent-searches-inner">
+                <span class="recent-label">Recent</span>
+                <div id="recentSearchesContainer" class="recent-searches-container"></div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- SIDEBAR DRAWER -->
+<div id="drawerBackdrop" class="drawer-backdrop"></div>
+<aside id="sidebarDrawer" class="sidebar-drawer">
+    <div class="drawer-header">
+        <h2 class="drawer-title">All Categories</h2>
+        <button id="closeDrawerBtn" class="drawer-close" type="button">×</button>
+    </div>
+    <div id="drawerContent" class="drawer-content"></div>
+</aside>
+
+<main class="main">
+    <div class="top-bar">
+        <h1 id="heading" class="heading">Latest Videos</h1>
+        <div id="status" class="status">Loading videos...</div>
+    </div>
+
+    <div id="loader" class="loader"></div>
+    <section id="grid" class="grid"></section>
+    <div id="empty" class="empty">No videos found.</div>
+    <nav id="pagination" class="pagination"></nav>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+<script>
+const CSV_URL = "./links.csv";
+const VIDEOS_PER_PAGE = 30;
+
+const CATEGORIES = [
+    { name: "All", keywords: [], popular: true, popularRank: 0 },
+    { name: "Scat / Shit Play", popular: true, popularRank: 1, keywords: ["scat","shit","poop","pooping","turd","diarrhea","shit feeding","ass to mouth","atm","shitty","smearing","toilet","toilet slave","human toilet","brown","dunghill","cowshit","prolapse shit","fecal","defecation","shit gape","shit sandwich","eating shit","shit in mouth","dirty butthole"] },
+    { name: "Piss / Watersports", popular: true, popularRank: 3, keywords: ["piss","pissing","pee","golden shower","toilet","enema","piss feeding","piss on","urine","wet","piss slut","piss whore"] },
+    { name: "Anal / Extreme Anal", popular: false, popularRank: 2, keywords: ["anal","ass","asshole","gape","prolapse","fisting","fist","deep anal","rough anal","anal cream","anal gaping","atm","dirty anal","hardcore anal","anal short","butthole"] },
+    { name: "Fisting & Prolapse", popular: false, popularRank: 4, keywords: ["fisting","fist","prolapse","double fisting","anal fisting","pussy fisting","extreme fisting","fist training","prolapse play","shitty prolapse"] },
+    { name: "Medical / Nurse / Clinic Play", popular: false, popularRank: 5, keywords: ["medical","nurse","doctor","headnurse","clinic","trainee","medical observer","medical monitor","rectal","enema training","fecal nurse","birth prepping","examination","sounding","catheter"] },
+    { name: "BDSM / Domination / Slave Training", popular: true, popularRank: 6, keywords: ["slave","dominant","mistress","lady","training","toilet slave","cbt","cock and ball torture","bondage","whipping","spanking","interrogation","sadistic","bound","stretched","rack","extreme cbt","hardcore training"] },
+    { name: "CBT (Cock & Ball Torture)", popular: false, keywords: ["cbt","cock and balls","ballbusting","clamping","whipping cock","extreme cbt","hard cbt","cock torture"] },
+    { name: "Enema & Toilet Training", popular: true, popularRank: 12, keywords: ["enema","toilet training","toilet slave","toilet club","swallow enema","enema and shit","rectal training","disimpaction"] },
+    { name: "Vomit / Puke Play", popular: true, popularRank: 4, keywords: ["puke","vomit","puking","puke passion","vomit scene","shit and vomit"] },
+    { name: "Trans / Shemale / Ladyboy", popular: false, popularRank: 7, keywords: ["trans","shemale","ladyboy","tgirl","trap","femboy","transsexual","ts"] },
+    { name: "BBW / Fat / Big Body", popular: false, popularRank: 8, keywords: ["fat","fatty","bbw","big butt","big ass","big belly","big momma","plump","thick","big girl"] },
+    { name: "Granny / Mature / Oma", popular: false, popularRank: 9, keywords: ["granny","oma","mature","milf","cougar","old","senior","grandma"] },
+    { name: "Interracial / Ebony / BBC", popular: false, popularRank: 11, keywords: ["ebony","black","bbc","interracial","dark","chocolate"] },
+    { name: "Latina / Asian / Ethnic", popular: false, keywords: ["latina","asian","japanese","thai","brazilian","german","russian","czech"] },
+    { name: "Deepthroat / Oral Extreme", popular: false, popularRank: 10, keywords: ["deepthroat","throat","face fuck","mouth","blowjob","oral","throat training","facefucking"] },
+    { name: "Lesbian / Girl-Girl", popular: false, popularRank: 14, keywords: ["lesbian","girls","2 girls","threesome girls","girl on girl"] },
+    { name: "Amateur / Homemade / Cam", popular: true, popularRank: 13, keywords: ["amateur","cam","webcam","homemade","real","pov","c2c"] },
+    { name: "Public / Outdoor", popular: false, keywords: ["outdoor","public","forest","garden","street","park","beach"] },
+    { name: "Fetish Clothing / Latex / Uniform", popular: false, keywords: ["latex","nurse","uniform","pantyhose","spandex","lingerie"] },
+    { name: "Extreme / Hardcore / Sadistic", popular: true, popularRank: 15, keywords: ["extreme","hardcore","brutal","sadistic","torture","rough","hard","intense","deviant"] },
+    { name: "Cum / Facial / Bukkake", popular: false, keywords: ["cum","facial","bukkake","creampie","cum eating","cumshot","swallowing"] },
+    { name: "Solo / Masturbation", popular: false, keywords: ["solo","masturbation","dildo","toy","fingering","self"] },
+    { name: "Gay / Male", popular: false, keywords: ["gay","bareback","cock","male","guy","twink","muscle"] },
+    { name: "Incest Roleplay / Taboo Family", popular: true, keywords: ["stepmom","stepdaughter","family","mom","daughter","sister","taboo"] },
+    { name: "Other Niche", popular: false, keywords: ["sounding","insertion","object insertion","food play","foot","rimming","gloryhole","swing","doggy","techno"] }
+];
+
+function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
+
+function matchesCategory(title, cat) {
+    if (!cat || !cat.keywords || cat.keywords.length === 0) return true;
+    if (!cat._regex) {
+        cat._regex = new RegExp(
+            "\\b(?:" + cat.keywords.map(k => escapeRegex(k.toLowerCase())).join("|") + ")(?:e?s)?\\b",
+            "i"
+        );
+    }
+    return cat._regex.test(title);
+}
+
+let activeCategory = "All";
+let activeSearchQuery = "";
+
+const grid = document.getElementById("grid");
+const status = document.getElementById("status");
+const loader = document.getElementById("loader");
+const empty = document.getElementById("empty");
+const pagination = document.getElementById("pagination");
+const searchForm = document.getElementById("searchForm");
+const search = document.getElementById("search");
+const searchFormWrapper = document.getElementById("searchWrapper");
+const searchCancel = document.getElementById("searchCancel");
+const searchSuggestions = document.getElementById("searchSuggestions");
+const heading = document.getElementById("heading");
+const logo = document.getElementById("logo");
+const randomButton = document.getElementById("randomButton");
+
+const openDrawerBtn = document.getElementById("openDrawerBtn");
+const closeDrawerBtn = document.getElementById("closeDrawerBtn");
+const sidebarDrawer = document.getElementById("sidebarDrawer");
+const drawerBackdrop = document.getElementById("drawerBackdrop");
+const popularCategoriesBar = document.getElementById("popularCategories");
+const recentSearchesRow = document.getElementById("recentSearchesRow");
+const recentSearchesContainer = document.getElementById("recentSearchesContainer");
+const drawerContent = document.getElementById("drawerContent");
+
+const catScrollLeft = document.getElementById("catScrollLeft");
+const catScrollRight = document.getElementById("catScrollRight");
+
+catScrollLeft.addEventListener("click", () => {
+    popularCategoriesBar.scrollBy({ left: -220, behavior: 'smooth' });
+});
+catScrollRight.addEventListener("click", () => {
+    popularCategoriesBar.scrollBy({ left: 220, behavior: 'smooth' });
+});
+
+let videos = [];
+let filteredVideos = [];
+let currentPage = 1;
+let fuseInstance = null;
+let isLoaded = false;
+
+function applySEOForContext(catName, searchQuery) {
+    let titleText = "Sick Fetish - Video Archive";
+    let descText = "Explore thousands of HD videos in our clean, curated video archive.";
+
+    if (searchQuery) {
+        titleText = `"${searchQuery}" Videos - Sick Fetish Archive`;
+        descText = `Watch high quality free videos matching "${searchQuery}" on Sick Fetish archive.`;
+    } else if (catName && catName !== "All") {
+        titleText = `Free ${catName} Videos & Clips - Sick Fetish`;
+        descText = `Browse our collection of high-definition ${catName} videos. Updated daily on Sick Fetish archive.`;
+    }
+
+    document.title = titleText;
+
+    let metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) metaDesc.content = descText;
+
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (canonical) {
+        const baseURL = window.location.origin + window.location.pathname;
+        if (searchQuery) {
+            canonical.href = `${baseURL}?q=${encodeURIComponent(searchQuery)}`;
+        } else if (catName && catName !== "All") {
+            canonical.href = `${baseURL}?cat=${encodeURIComponent(catName)}`;
+        } else {
+            canonical.href = baseURL;
+        }
+    }
+}
+
+function parseParamsFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get("q") || "";
+    const cat = params.get("cat") || "All";
+
+    activeSearchQuery = q.trim();
+    activeCategory = activeSearchQuery ? "All" : cat;
+
+    if (activeSearchQuery) {
+        search.value = activeSearchQuery;
+        searchFormWrapper.classList.add("has-text");
+    } else {
+        search.value = "";
+        searchFormWrapper.classList.remove("has-text");
+    }
+}
+
+function updateURLParams() {
+    const url = new URL(window.location.href);
+    if (activeSearchQuery) {
+        url.searchParams.set("q", activeSearchQuery);
+        url.searchParams.delete("cat");
+    } else if (activeCategory && activeCategory !== "All") {
+        url.searchParams.set("cat", activeCategory);
+        url.searchParams.delete("q");
+    } else {
+        url.searchParams.delete("q");
+        url.searchParams.delete("cat");
+    }
+    window.history.pushState({}, "", url.toString());
+}
+
+function shuffle(array) {
+    const res = [...array];
+    for (let i = res.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [res[i], res[j]] = [res[j], res[i]];
+    }
+    return res;
+}
+
+function getRecentSearches() {
+    try {
+        return JSON.parse(localStorage.getItem('sf_recent_searches') || '[]');
+    } catch (_) {
+        return [];
+    }
+}
+
+function addRecentSearch(query) {
+    const cleanQ = query.trim();
+    if (!cleanQ) return;
+
+    const isBuiltIn = CATEGORIES.some(c => c.name.toLowerCase() === cleanQ.toLowerCase());
+    if (isBuiltIn) return;
+
+    try {
+        let history = getRecentSearches().filter(q => q.toLowerCase() !== cleanQ.toLowerCase());
+        history.unshift(cleanQ);
+        localStorage.setItem('sf_recent_searches', JSON.stringify(history.slice(0, 5)));
+    } catch (_) {}
+}
+
+function getPersonalizedFeed(allVideos) {
+    try {
+        const history = JSON.parse(localStorage.getItem('sf_watch_history') || '[]');
+        if (history.length === 0) return shuffle(allVideos);
+
+        const counts = {};
+        history.forEach(cat => { counts[cat] = (counts[cat] || 0) + 1; });
+        const favoriteCat = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+
+        const favCategoryObj = CATEGORIES.find(c => c.name === favoriteCat);
+        if (!favCategoryObj || favCategoryObj.keywords.length === 0) return shuffle(allVideos);
+
+        const matches = [];
+        const others = [];
+        allVideos.forEach(v => {
+            if (matchesCategory(v.title, favCategoryObj)) {
+                matches.push(v);
+            } else {
+                others.push(v);
+            }
+        });
+        return [...shuffle(matches), ...shuffle(others)];
+    } catch (_) {
+        return shuffle(allVideos);
+    }
+}
+
+function toggleDrawer(open) {
+    sidebarDrawer.classList.toggle("open", open);
+    drawerBackdrop.classList.toggle("open", open);
+}
+
+openDrawerBtn.addEventListener("click", () => toggleDrawer(true));
+closeDrawerBtn.addEventListener("click", () => toggleDrawer(false));
+drawerBackdrop.addEventListener("click", () => toggleDrawer(false));
+
+function renderCategoryNavs() {
+    popularCategoriesBar.innerHTML = "";
+    CATEGORIES.filter(c => c.popular)
+        .sort((a, b) => (a.popularRank ?? 99) - (b.popularRank ?? 99))
+        .forEach(cat => {
+            const pill = document.createElement("a");
+            const isActive = (!activeSearchQuery && activeCategory === cat.name);
+            pill.className = "cat-pill" + (isActive ? " active" : "");
+            pill.textContent = cat.name;
+            pill.href = (cat.name === "All") ? "videos.html" : `videos.html?cat=${encodeURIComponent(cat.name)}`;
+            pill.addEventListener("click", (e) => {
+                e.preventDefault();
+                selectCategory(cat.name);
+            });
+            popularCategoriesBar.appendChild(pill);
+        });
+
+    const recentSearches = getRecentSearches();
+    recentSearchesContainer.innerHTML = "";
+    if (recentSearches.length > 0) {
+        recentSearchesRow.classList.add("visible");
+        recentSearches.forEach(query => {
+            const pill = document.createElement("a");
+            const isActive = (activeSearchQuery === query || activeCategory === query);
+            pill.className = "cat-pill temp" + (isActive ? " active" : "");
+            pill.textContent = `🔍 ${query}`;
+            pill.title = query;
+            pill.href = `videos.html?q=${encodeURIComponent(query)}`;
+            pill.addEventListener("click", (e) => {
+                e.preventDefault();
+                triggerSearch(query);
+            });
+            recentSearchesContainer.appendChild(pill);
+        });
+    } else {
+        recentSearchesRow.classList.remove("visible");
+    }
+
+    drawerContent.innerHTML = "";
+    CATEGORIES.forEach(cat => {
+        const btn = document.createElement("a");
+        const isActive = (!activeSearchQuery && activeCategory === cat.name);
+        btn.className = "drawer-item" + (isActive ? " active" : "");
+        btn.href = (cat.name === "All") ? "videos.html" : `videos.html?cat=${encodeURIComponent(cat.name)}`;
+
+        let matchCount = videos.length;
+        if (cat.keywords.length > 0) {
+            matchCount = videos.filter(v => matchesCategory(v.title, cat)).length;
+        }
+
+        btn.innerHTML = `<span>${cat.name}</span> <span class="drawer-item-count">${matchCount}</span>`;
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            selectCategory(cat.name);
+            toggleDrawer(false);
+        });
+        drawerContent.appendChild(btn);
+    });
+
+    if (recentSearches.length > 0) {
+        const label = document.createElement("div");
+        label.className = "drawer-section-label";
+        label.textContent = "Recent Searches";
+        drawerContent.appendChild(label);
+
+        recentSearches.forEach(query => {
+            const btn = document.createElement("a");
+            const isActive = (activeSearchQuery === query || activeCategory === query);
+            btn.className = "drawer-item" + (isActive ? " active" : "");
+            btn.href = `videos.html?q=${encodeURIComponent(query)}`;
+
+            const matchCount = videos.filter(v => v.title.toLowerCase().includes(query.toLowerCase())).length;
+
+            btn.innerHTML = `<span>🔍 ${query}</span> <span class="drawer-item-count">${matchCount}</span>`;
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                triggerSearch(query);
+                toggleDrawer(false);
+            });
+            drawerContent.appendChild(btn);
+        });
+    }
+}
+
+function selectCategory(catName) {
+    activeCategory = catName;
+    activeSearchQuery = "";
+    search.value = "";
+    searchFormWrapper.classList.remove("has-text");
+    updateURLParams();
+    applyFilters();
+}
+
+function triggerSearch(query) {
+    const cleanQ = query.trim();
+    if (!cleanQ) return;
+    activeSearchQuery = cleanQ;
+    activeCategory = "All";
+    search.value = cleanQ;
+    searchFormWrapper.classList.add("has-text");
+    updateURLParams();
+    applyFilters();
+}
+
+function applyFilters() {
+    if (!isLoaded) return;
+    currentPage = 1;
+    let baseList = videos;
+
+    if (activeSearchQuery) {
+        baseList = searchVideos(activeSearchQuery, videos);
+        addRecentSearch(activeSearchQuery);
+        heading.textContent = `Search: "${activeSearchQuery}"`;
+    } else if (activeCategory !== "All") {
+        const selectedCat = CATEGORIES.find(c => c.name === activeCategory);
+        if (selectedCat && selectedCat.keywords.length > 0) {
+            const matches = videos.filter(video => matchesCategory(video.title, selectedCat));
+            baseList = shuffle(matches);
+        }
+        heading.textContent = `${activeCategory} Videos`;
+    } else {
+        baseList = getPersonalizedFeed(videos);
+        heading.textContent = "Recommended For You";
+    }
+
+    applySEOForContext(activeCategory, activeSearchQuery);
+    filteredVideos = baseList;
+    renderCategoryNavs();
+    status.textContent = `${filteredVideos.length} videos found`;
+    renderGrid();
+    renderPagination();
+}
+
+function searchVideos(query, allVideos) {
+    const cleanQuery = query.trim();
+    if (!cleanQuery) return shuffle(allVideos);
+
+    if (fuseInstance) {
+        const results = fuseInstance.search(cleanQuery);
+        const matchedItems = results.map(r => r.item);
+
+        const topSlice = matchedItems.slice(0, 60);
+        const remainingSlice = matchedItems.slice(60);
+
+        return [...shuffle(topSlice), ...remainingSlice];
+    }
+
+    const fallbackMatches = allVideos.filter(v => v.title.toLowerCase().includes(cleanQuery.toLowerCase()));
+    return shuffle(fallbackMatches);
+}
+
+function formatTitle(slug) {
+    if (!slug) return "Untitled Video";
+    let title = slug;
+    try { title = decodeURIComponent(title); } catch (_) {}
+    return title.replace(/[-_]+/g, " ").replace(/\s+/g, " ").trim().toLowerCase()
+        .split(" ").map(w => w ? w.charAt(0).toUpperCase() + w.slice(1) : "").join(" ") || "Untitled Video";
+}
+
+function cleanUrl(rawUrl) {
+    let url = String(rawUrl || "").trim();
+    if (url.length >= 2 && ((url.startsWith('"') && url.endsWith('"')) || (url.startsWith("'") && url.endsWith("'")))) {
+        url = url.slice(1, -1).trim();
+    }
+    return url.replace(/^https\/\//i, "https://").replace(/^http\/\//i, "http://");
+}
+
+function createThumbnailUrl(url, id) {
+    const hostname = url.hostname.toLowerCase();
+    const isPervertDomain = hostname.includes('pervertium.com') || hostname.includes('perverttube.com');
+    const folder = Math.floor(parseInt(id, 10) / 1000) * 1000;
+
+    if (isPervertDomain) {
+        return `${url.origin}/contents/videos_screenshots/${folder}/${encodeURIComponent(id)}/preview.jpg`;
+    }
+    return `${url.origin}/contents/videos_screenshots/${folder}/${encodeURIComponent(id)}/264x198/1.jpg`;
+}
+
+function parseVideoUrl(rawUrl) {
+    const cleaned = cleanUrl(rawUrl);
+    if (!cleaned) return null;
+    let url;
+    try { url = new URL(cleaned); } catch (_) { return null; }
+    const parts = url.pathname.split("/").filter(Boolean);
+
+    const vIdx = parts.findIndex(p => {
+        const lower = p.toLowerCase();
+        return lower === "videos" || lower === "video";
+    });
+
+    if (vIdx !== -1 && parts[vIdx + 1]) {
+        const id = parts[vIdx + 1];
+        const titleSlug = parts.slice(vIdx + 2).join("-");
+        const title = formatTitle(titleSlug);
+        const embedUrl = url.origin + "/embed/" + encodeURIComponent(id);
+        const thumbnailUrl = createThumbnailUrl(url, id);
+        return { id, title, embedUrl, thumbnailUrl, sourceUrl: url.href };
+    }
+    return null;
+}
+
+async function loadVideos() {
+    try {
+        status.textContent = "Loading video list...";
+        const response = await fetch(CSV_URL, { method: "GET", cache: "no-cache" });
+        if (!response.ok) throw new Error("HTTP " + response.status);
+        const text = await response.text();
+        const urls = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+
+        const results = [];
+        const seen = new Set();
+        for (const rawUrl of urls) {
+            const video = parseVideoUrl(rawUrl);
+            if (video && !seen.has(video.embedUrl)) {
+                seen.add(video.embedUrl);
+                results.push(video);
+            }
+        }
+
+        videos = results;
+        isLoaded = true;
+
+        if (typeof Fuse !== "undefined") {
+            fuseInstance = new Fuse(videos, {
+                keys: [
+                    { name: 'title', weight: 0.8 },
+                    { name: 'id', weight: 0.2 }
+                ],
+                includeScore: true,
+                threshold: 0.3,
+                distance: 100,
+                minMatchCharLength: 2,
+                ignoreLocation: true
+            });
+        }
+
+        loader.style.display = "none";
+        status.textContent = `${videos.length} videos loaded`;
+
+        parseParamsFromURL();
+        applyFilters();
+
+    } catch (err) {
+        loader.style.display = "none";
+        status.textContent = "Failed to load video list.";
+        empty.style.display = "block";
+    }
+}
+
+function renderGrid() {
+    grid.innerHTML = "";
+    const startIndex = (currentPage - 1) * VIDEOS_PER_PAGE;
+    const pageVideos = filteredVideos.slice(startIndex, startIndex + VIDEOS_PER_PAGE);
+
+    if (pageVideos.length === 0) {
+        empty.style.display = "block";
+        return;
+    }
+    empty.style.display = "none";
+
+    pageVideos.forEach(video => {
+        const a = document.createElement("a");
+        a.className = "card";
+
+        let targetHref = `second.html?id=${encodeURIComponent(video.id)}`;
+        if (activeSearchQuery) {
+            targetHref += `&from_q=${encodeURIComponent(activeSearchQuery)}`;
+        } else if (activeCategory && activeCategory !== "All") {
+            targetHref += `&from_cat=${encodeURIComponent(activeCategory)}`;
+        }
+
+        a.href = targetHref;
+
+        const thumb = document.createElement("div");
+        thumb.className = "thumbnail";
+        if (video.thumbnailUrl) {
+            const img = document.createElement("img");
+            img.src = video.thumbnailUrl;
+            img.alt = video.title;
+            img.loading = "lazy";
+            thumb.appendChild(img);
+        }
+
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "title";
+        titleDiv.textContent = video.title;
+
+        a.appendChild(thumb);
+        a.appendChild(titleDiv);
+        grid.appendChild(a);
+    });
+}
+
+function renderPagination() {
+    pagination.innerHTML = "";
+    const totalPages = Math.ceil(filteredVideos.length / VIDEOS_PER_PAGE);
+    if (totalPages <= 1) return;
+
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            const btn = document.createElement("button");
+            btn.className = "page-button" + (i === currentPage ? " active" : "");
+            btn.textContent = i;
+            btn.addEventListener("click", () => {
+                currentPage = i;
+                renderGrid();
+                renderPagination();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+            });
+            pagination.appendChild(btn);
+        }
+    }
+}
+
+window.addEventListener("popstate", () => {
+    parseParamsFromURL();
+    applyFilters();
+});
+
+search.addEventListener("input", (e) => {
+    const rawQ = e.target.value.trim().toLowerCase();
+    searchFormWrapper.classList.toggle("has-text", rawQ.length > 0);
+    if (!rawQ || !isLoaded) { searchSuggestions.classList.remove("open"); return; }
+
+    const queryWords = rawQ.split(/\s+/).filter(Boolean);
+
+    const scoredMatches = videos.map(v => {
+        const titleLower = v.title.toLowerCase();
+        let score = 0;
+        queryWords.forEach(qw => {
+            if (titleLower.includes(qw)) {
+                score += 1;
+                if (titleLower.startsWith(qw)) score += 1;
+            }
+        });
+        return { video: v, score };
+    }).filter(item => item.score > 0);
+
+    scoredMatches.sort((a, b) => b.score - a.score);
+    const matches = scoredMatches.slice(0, 6).map(item => item.video);
+
+    if (!matches.length) { searchSuggestions.classList.remove("open"); return; }
+
+    searchSuggestions.innerHTML = "";
+    matches.forEach(video => {
+        const item = document.createElement("a");
+        item.className = "suggestion-item";
+        item.href = `videos.html?q=${encodeURIComponent(video.title)}`;
+        item.innerHTML = `🔍 <span>${video.title}</span>`;
+        item.addEventListener("click", (e) => {
+            e.preventDefault();
+            triggerSearch(video.title);
+            searchSuggestions.classList.remove("open");
+        });
+        searchSuggestions.appendChild(item);
+    });
+    searchSuggestions.classList.add("open");
+});
+
+searchForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    searchSuggestions.classList.remove("open");
+    const query = search.value.trim();
+    if (query) {
+        triggerSearch(query);
+    }
+});
+
+searchCancel.addEventListener("click", () => {
+    selectCategory("All");
+    searchSuggestions.classList.remove("open");
+});
+
+randomButton.addEventListener("click", () => {
+    if (videos.length === 0) return;
+    const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+    window.location.href = `second.html?id=${encodeURIComponent(randomVideo.id)}`;
+});
+
+loadVideos();
+</script>
+
+</body>
+</html>
