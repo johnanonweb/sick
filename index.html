@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#050505">
 <meta name="description" content="Sick Fetish video archive - Browse curated videos and categories.">
-<link rel="canonical" href="index.html">
+<link rel="canonical" href="/">
 <title>Sick Fetish Video Archive</title>
 
 <style>
@@ -159,7 +159,7 @@ body {
 }
 
 .suggestion-item:last-child { border-bottom: 0; }
-.suggestion-item:hover { background: #161616; color: #ffffff; }
+.suggestion-item:hover, .suggestion-item.focused { background: #161616; color: #ffffff; outline: none; }
 
 .search-cancel {
     position: absolute;
@@ -238,7 +238,6 @@ body {
 
 .drawer-toggle-btn:hover { background: #1a1a1a; border-color: #383838; }
 
-/* CATEGORY SCROLL CONTAINER & BUTTONS */
 .categories-scroll-container {
     display: flex;
     align-items: center;
@@ -555,7 +554,6 @@ body {
 @media (max-width:1200px) { .grid { grid-template-columns: repeat(4,minmax(0,1fr)); } }
 @media (max-width:900px) { .grid { grid-template-columns: repeat(3,minmax(0,1fr)); } }
 
-/* RESPONSIVE BROADER MOBILE SEARCH BAR & HEADER */
 @media (max-width:650px) {
     .grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
     .header-top {
@@ -582,20 +580,20 @@ body {
 
 <header class="header">
     <div class="header-top">
-        <a id="logo" href="index.html" class="logo" title="Home">
-            <img src="./logo.jpeg" alt="Sick Fetish">
+        <a id="logo" href="/" class="logo" title="Home">
+            <img src="/logo.jpeg" alt="Sick Fetish">
         </a>
 
         <form id="searchForm" class="search-form-wrapper" action="#" onsubmit="return false;">
             <div id="searchWrapper" class="search-wrapper">
-                <input id="search" class="search" type="search" placeholder="Search videos..." autocomplete="off">
-                <button id="searchCancel" class="search-cancel" type="button">×</button>
-                <div id="searchSuggestions" class="search-suggestions"></div>
+                <input id="search" class="search" type="search" placeholder="Search videos..." autocomplete="off" aria-label="Search videos">
+                <button id="searchCancel" class="search-cancel" type="button" aria-label="Clear search">×</button>
+                <div id="searchSuggestions" class="search-suggestions" role="listbox"></div>
             </div>
-            <button id="searchSubmit" class="search-submit" type="submit">🔍</button>
+            <button id="searchSubmit" class="search-submit" type="submit" aria-label="Submit search">🔍</button>
         </form>
 
-        <button id="randomButton" class="random-button" type="button" title="Random video">⤨</button>
+        <button id="randomButton" class="random-button" type="button" title="Random video" aria-label="Random video">⤨</button>
     </div>
 
     <div class="header-nav">
@@ -604,9 +602,9 @@ body {
                 <span>☰</span> All Categories
             </button>
             <div class="categories-scroll-container">
-                <button id="catScrollLeft" class="cat-scroll-btn" type="button">❮</button>
+                <button id="catScrollLeft" class="cat-scroll-btn" type="button" aria-label="Scroll left">❮</button>
                 <div id="popularCategories" class="popular-categories"></div>
-                <button id="catScrollRight" class="cat-scroll-btn" type="button">❯</button>
+                <button id="catScrollRight" class="cat-scroll-btn" type="button" aria-label="Scroll right">❯</button>
             </div>
         </div>
 
@@ -619,12 +617,11 @@ body {
     </div>
 </header>
 
-<!-- SIDEBAR DRAWER -->
 <div id="drawerBackdrop" class="drawer-backdrop"></div>
 <aside id="sidebarDrawer" class="sidebar-drawer">
     <div class="drawer-header">
         <h2 class="drawer-title">All Categories</h2>
-        <button id="closeDrawerBtn" class="drawer-close" type="button">×</button>
+        <button id="closeDrawerBtn" class="drawer-close" type="button" aria-label="Close categories menu">×</button>
     </div>
     <div id="drawerContent" class="drawer-content"></div>
 </aside>
@@ -643,8 +640,20 @@ body {
 
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
 <script>
-const CSV_URL = "./links.csv";
+const API_BASE = window.location.origin;
 const VIDEOS_PER_PAGE = 30;
+const FALLBACK_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="264" height="198" fill="%23111111"><rect width="100%" height="100%"/></svg>';
+
+function makeVideoPageUrl(video, extraParams = {}) {
+    const id = encodeURIComponent(String(video.id));
+    const slug = String(video.title || "video").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "video";
+    const target = new URL(`/videos/${id}/${slug}/`, window.location.origin);
+    Object.entries(extraParams).forEach(([key, value]) => {
+        if (value) target.searchParams.set(key, value);
+    });
+    return target.pathname + target.search;
+}
 
 const CATEGORIES = [
     { name: "All", keywords: [], popular: true, popularRank: 0 },
@@ -690,6 +699,7 @@ function matchesCategory(title, cat) {
 
 let activeCategory = "All";
 let activeSearchQuery = "";
+let selectedSuggestionIndex = -1;
 
 const grid = document.getElementById("grid");
 const status = document.getElementById("status");
@@ -729,6 +739,7 @@ let filteredVideos = [];
 let currentPage = 1;
 let fuseInstance = null;
 let isLoaded = false;
+let totalResults = 0;
 
 function applySEOForContext(catName, searchQuery) {
     let titleText = "Sick Fetish - Video Archive";
@@ -823,31 +834,52 @@ function addRecentSearch(query) {
     } catch (_) {}
 }
 
-function getPersonalizedFeed(allVideos) {
+function getPersonalizedFeed(candidateVideos, latestVideos) {
+    const unique = new Map();
+    candidateVideos.forEach(video => unique.set(String(video.id), video));
+
+    let history = [];
     try {
-        const history = JSON.parse(localStorage.getItem('sf_watch_history') || '[]');
-        if (history.length === 0) return shuffle(allVideos);
+        history = JSON.parse(localStorage.getItem("sf_watch_history") || "[]");
+    } catch (_) {}
 
-        const counts = {};
-        history.forEach(cat => { counts[cat] = (counts[cat] || 0) + 1; });
-        const favoriteCat = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+    const counts = {};
+    history.forEach(name => {
+        if (name && name !== "All") counts[name] = (counts[name] || 0) + 1;
+    });
+    const favoriteCategories = Object.keys(counts)
+        .sort((a, b) => counts[b] - counts[a])
+        .slice(0, 3)
+        .map(name => CATEGORIES.find(cat => cat.name === name))
+        .filter(Boolean);
 
-        const favCategoryObj = CATEGORIES.find(c => c.name === favoriteCat);
-        if (!favCategoryObj || favCategoryObj.keywords.length === 0) return shuffle(allVideos);
+    const latestIds = new Set(latestVideos.map(video => String(video.id)));
+    const relevant = [];
+    const latest = [];
+    const discovery = [];
 
-        const matches = [];
-        const others = [];
-        allVideos.forEach(v => {
-            if (matchesCategory(v.title, favCategoryObj)) {
-                matches.push(v);
-            } else {
-                others.push(v);
-            }
-        });
-        return [...shuffle(matches), ...shuffle(others)];
-    } catch (_) {
-        return shuffle(allVideos);
+    unique.forEach(video => {
+        const isRelevant = favoriteCategories.some(cat => matchesCategory(video.title || "", cat));
+        if (isRelevant) relevant.push(video);
+        else if (latestIds.has(String(video.id))) latest.push(video);
+        else discovery.push(video);
+    });
+
+    const queues = [shuffle(relevant), shuffle(discovery), shuffle(latest)];
+    const order = favoriteCategories.length ? [0, 1, 0, 1, 2] : [1, 1, 2, 1];
+    const result = [];
+    let cursor = 0;
+
+    while (queues.some(queue => queue.length)) {
+        const queueIndex = order[cursor % order.length];
+        if (queues[queueIndex].length) result.push(queues[queueIndex].shift());
+        else {
+            const fallbackIndex = queues.findIndex(queue => queue.length);
+            if (fallbackIndex !== -1) result.push(queues[fallbackIndex].shift());
+        }
+        cursor++;
     }
+    return result;
 }
 
 function toggleDrawer(open) {
@@ -868,7 +900,7 @@ function renderCategoryNavs() {
             const isActive = (!activeSearchQuery && activeCategory === cat.name);
             pill.className = "cat-pill" + (isActive ? " active" : "");
             pill.textContent = cat.name;
-            pill.href = (cat.name === "All") ? "index.html" : `index.html?cat=${encodeURIComponent(cat.name)}`;
+            pill.href = (cat.name === "All") ? "/" : `/?cat=${encodeURIComponent(cat.name)}`;
             pill.addEventListener("click", (e) => {
                 e.preventDefault();
                 selectCategory(cat.name);
@@ -886,7 +918,7 @@ function renderCategoryNavs() {
             pill.className = "cat-pill temp" + (isActive ? " active" : "");
             pill.textContent = `🔍 ${query}`;
             pill.title = query;
-            pill.href = `index.html?q=${encodeURIComponent(query)}`;
+            pill.href = `/?q=${encodeURIComponent(query)}`;
             pill.addEventListener("click", (e) => {
                 e.preventDefault();
                 triggerSearch(query);
@@ -902,13 +934,9 @@ function renderCategoryNavs() {
         const btn = document.createElement("a");
         const isActive = (!activeSearchQuery && activeCategory === cat.name);
         btn.className = "drawer-item" + (isActive ? " active" : "");
-        btn.href = (cat.name === "All") ? "index.html" : `index.html?cat=${encodeURIComponent(cat.name)}`;
+        btn.href = (cat.name === "All") ? "/" : `/?cat=${encodeURIComponent(cat.name)}`;
 
-        let matchCount = videos.length;
-        if (cat.keywords.length > 0) {
-            matchCount = videos.filter(v => matchesCategory(v.title, cat)).length;
-        }
-
+        const matchCount = cat.name === activeCategory ? totalResults.toLocaleString() : "";
         btn.innerHTML = `<span>${cat.name}</span> <span class="drawer-item-count">${matchCount}</span>`;
         btn.addEventListener("click", (e) => {
             e.preventDefault();
@@ -928,11 +956,9 @@ function renderCategoryNavs() {
             const btn = document.createElement("a");
             const isActive = (activeSearchQuery === query || activeCategory === query);
             btn.className = "drawer-item" + (isActive ? " active" : "");
-            btn.href = `index.html?q=${encodeURIComponent(query)}`;
+            btn.href = `/?q=${encodeURIComponent(query)}`;
 
-            const matchCount = videos.filter(v => v.title.toLowerCase().includes(query.toLowerCase())).length;
-
-            btn.innerHTML = `<span>🔍 ${query}</span> <span class="drawer-item-count">${matchCount}</span>`;
+            btn.innerHTML = `<span>🔍 ${query}</span>`;
             btn.addEventListener("click", (e) => {
                 e.preventDefault();
                 triggerSearch(query);
@@ -963,33 +989,112 @@ function triggerSearch(query) {
     applyFilters();
 }
 
-function applyFilters() {
-    if (!isLoaded) return;
-    currentPage = 1;
-    let baseList = videos;
+async function fetchRecommendedFeed() {
+    const seenKey = "sf_seen_feed_ids";
+    let seen = new Set();
+    try {
+        seen = new Set(JSON.parse(sessionStorage.getItem(seenKey) || "[]").map(String));
+    } catch (_) {}
+    if (currentPage === 1) seen.clear();
 
-    if (activeSearchQuery) {
-        baseList = searchVideos(activeSearchQuery, videos);
-        addRecentSearch(activeSearchQuery);
-        heading.textContent = `Search: "${activeSearchQuery}"`;
-    } else if (activeCategory !== "All") {
-        const selectedCat = CATEGORIES.find(c => c.name === activeCategory);
-        if (selectedCat && selectedCat.keywords.length > 0) {
-            const matches = videos.filter(video => matchesCategory(video.title, selectedCat));
-            baseList = shuffle(matches);
-        }
-        heading.textContent = `${activeCategory} Videos`;
-    } else {
-        baseList = getPersonalizedFeed(videos);
-        heading.textContent = "Recommended For You";
+    const makeRequest = async (offset) => {
+        const params = new URLSearchParams({ limit: String(VIDEOS_PER_PAGE), offset: String(offset) });
+        const response = await fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Feed API returned ${response.status}`);
+        return response.json();
+    };
+
+    const latestData = await makeRequest(0);
+    totalResults = Number(latestData.total || 0);
+    const latestVideos = Array.isArray(latestData.items) ? latestData.items : [];
+    const candidateMap = new Map();
+    latestVideos.forEach(video => candidateMap.set(String(video.id), video));
+
+    // Sample several different windows across the complete database, not just its newest 30 rows.
+    const maxOffset = Math.max(0, totalResults - VIDEOS_PER_PAGE);
+    const offsets = new Set();
+    while (offsets.size < 5 && maxOffset > 0) {
+        offsets.add(Math.floor(Math.random() * (maxOffset + 1)));
     }
 
+    const sampledPages = await Promise.all([...offsets].map(makeRequest));
+    sampledPages.forEach(page => {
+        (page.items || []).forEach(video => candidateMap.set(String(video.id), video));
+    });
+
+    let ranked = getPersonalizedFeed([...candidateMap.values()], latestVideos);
+    ranked = ranked.filter(video => !seen.has(String(video.id)));
+
+    // If a sampled window overlaps a previous page heavily, sample more windows until the page is filled.
+    let attempts = 0;
+    while (ranked.length < VIDEOS_PER_PAGE && attempts < 5 && maxOffset > 0) {
+        attempts++;
+        const extraOffset = Math.floor(Math.random() * (maxOffset + 1));
+        const extraPage = await makeRequest(extraOffset);
+        (extraPage.items || []).forEach(video => {
+            const id = String(video.id);
+            if (!candidateMap.has(id)) candidateMap.set(id, video);
+        });
+        ranked = getPersonalizedFeed([...candidateMap.values()], latestVideos)
+            .filter(video => !seen.has(String(video.id)));
+    }
+
+    const pageVideos = ranked.slice(0, VIDEOS_PER_PAGE);
+    pageVideos.forEach(video => seen.add(String(video.id)));
+    try {
+        sessionStorage.setItem(seenKey, JSON.stringify([...seen].slice(-3000)));
+    } catch (_) {}
+    return pageVideos;
+}
+
+async function applyFilters(resetPage = true) {
+    if (!isLoaded) return;
+    if (resetPage) currentPage = 1;
+
     applySEOForContext(activeCategory, activeSearchQuery);
-    filteredVideos = baseList;
-    renderCategoryNavs();
-    status.textContent = `${filteredVideos.length} videos found`;
-    renderGrid();
-    renderPagination();
+    loader.style.display = "block";
+    empty.style.display = "none";
+    status.textContent = "Loading videos...";
+    pagination.innerHTML = "";
+
+    try {
+        if (!activeSearchQuery && activeCategory === "All") {
+            heading.textContent = "Recommended For You";
+            filteredVideos = await fetchRecommendedFeed();
+        } else {
+            const params = new URLSearchParams({
+                limit: String(VIDEOS_PER_PAGE),
+                offset: String((currentPage - 1) * VIDEOS_PER_PAGE)
+            });
+            if (activeSearchQuery) {
+                params.set("q", activeSearchQuery);
+                addRecentSearch(activeSearchQuery);
+                heading.textContent = `Search: "${activeSearchQuery}"`;
+            } else {
+                params.set("cat", activeCategory);
+                heading.textContent = `${activeCategory} Videos`;
+            }
+
+            const response = await fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "no-store" });
+            if (!response.ok) throw new Error(`API returned ${response.status}`);
+            const data = await response.json();
+            filteredVideos = Array.isArray(data.items) ? data.items : [];
+            totalResults = Number(data.total || 0);
+        }
+
+        videos = filteredVideos;
+        loader.style.display = "none";
+        status.textContent = `${totalResults.toLocaleString()} videos in database · Showing ${filteredVideos.length}`;
+        renderCategoryNavs();
+        renderGrid();
+        renderPagination();
+    } catch (err) {
+        console.error("Bunny API error:", err);
+        loader.style.display = "none";
+        status.textContent = "Could not load videos from the database.";
+        empty.textContent = "Database connection failed. Check the Edge Script API URL and deployment.";
+        empty.style.display = "block";
+    }
 }
 
 function searchVideos(query, allVideos) {
@@ -1061,57 +1166,15 @@ function parseVideoUrl(rawUrl) {
 }
 
 async function loadVideos() {
-    try {
-        status.textContent = "Loading video list...";
-        const response = await fetch(CSV_URL, { method: "GET", cache: "no-cache" });
-        if (!response.ok) throw new Error("HTTP " + response.status);
-        const text = await response.text();
-        const urls = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-
-        const results = [];
-        const seen = new Set();
-        for (const rawUrl of urls) {
-            const video = parseVideoUrl(rawUrl);
-            if (video && !seen.has(video.embedUrl)) {
-                seen.add(video.embedUrl);
-                results.push(video);
-            }
-        }
-
-        videos = results;
-        isLoaded = true;
-
-        if (typeof Fuse !== "undefined") {
-            fuseInstance = new Fuse(videos, {
-                keys: [
-                    { name: 'title', weight: 0.8 },
-                    { name: 'id', weight: 0.2 }
-                ],
-                includeScore: true,
-                threshold: 0.3,
-                distance: 100,
-                minMatchCharLength: 2,
-                ignoreLocation: true
-            });
-        }
-
-        loader.style.display = "none";
-        status.textContent = `${videos.length} videos loaded`;
-
-        parseParamsFromURL();
-        applyFilters();
-
-    } catch (err) {
-        loader.style.display = "none";
-        status.textContent = "Failed to load video list.";
-        empty.style.display = "block";
-    }
+    parseParamsFromURL();
+    isLoaded = true;
+    loader.style.display = "block";
+    await applyFilters(false);
 }
 
 function renderGrid() {
     grid.innerHTML = "";
-    const startIndex = (currentPage - 1) * VIDEOS_PER_PAGE;
-    const pageVideos = filteredVideos.slice(startIndex, startIndex + VIDEOS_PER_PAGE);
+    const pageVideos = filteredVideos;
 
     if (pageVideos.length === 0) {
         empty.style.display = "block";
@@ -1123,13 +1186,10 @@ function renderGrid() {
         const a = document.createElement("a");
         a.className = "card";
 
-        let targetHref = `second.html?id=${encodeURIComponent(video.id)}`;
-        if (activeSearchQuery) {
-            targetHref += `&from_q=${encodeURIComponent(activeSearchQuery)}`;
-        } else if (activeCategory && activeCategory !== "All") {
-            targetHref += `&from_cat=${encodeURIComponent(activeCategory)}`;
-        }
-
+        const targetHref = makeVideoPageUrl(video, {
+            from_q: activeSearchQuery,
+            from_cat: activeCategory && activeCategory !== "All" ? activeCategory : ""
+        });
         a.href = targetHref;
 
         const thumb = document.createElement("div");
@@ -1138,7 +1198,10 @@ function renderGrid() {
             const img = document.createElement("img");
             img.src = video.thumbnailUrl;
             img.alt = video.title;
+            img.width = 264;
+            img.height = 198;
             img.loading = "lazy";
+            img.onerror = () => { img.onerror = null; img.src = FALLBACK_IMAGE; };
             thumb.appendChild(img);
         }
 
@@ -1154,68 +1217,115 @@ function renderGrid() {
 
 function renderPagination() {
     pagination.innerHTML = "";
-    const totalPages = Math.ceil(filteredVideos.length / VIDEOS_PER_PAGE);
+    const totalPages = Math.ceil(totalResults / VIDEOS_PER_PAGE);
     if (totalPages <= 1) return;
 
-    for (let i = 1; i <= totalPages; i++) {
-        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-            const btn = document.createElement("button");
-            btn.className = "page-button" + (i === currentPage ? " active" : "");
-            btn.textContent = i;
-            btn.addEventListener("click", () => {
-                currentPage = i;
-                renderGrid();
-                renderPagination();
-                window.scrollTo({ top: 0, behavior: "smooth" });
-            });
-            pagination.appendChild(btn);
+    const pageNumbers = new Set([1, totalPages]);
+    for (let p = Math.max(1, currentPage - 2); p <= Math.min(totalPages, currentPage + 2); p++) pageNumbers.add(p);
+    const sorted = [...pageNumbers].sort((a, b) => a - b);
+    let previous = 0;
+
+    sorted.forEach(page => {
+        if (previous && page - previous > 1) {
+            const dots = document.createElement("span");
+            dots.className = "page-ellipsis";
+            dots.textContent = "…";
+            pagination.appendChild(dots);
         }
-    }
+        const btn = document.createElement("button");
+        btn.className = "page-button" + (page === currentPage ? " active" : "");
+        btn.textContent = page;
+        btn.addEventListener("click", async () => {
+            currentPage = page;
+            await applyFilters(false);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+        pagination.appendChild(btn);
+        previous = page;
+    });
 }
 
 window.addEventListener("popstate", () => {
     parseParamsFromURL();
-    applyFilters();
+    applyFilters(true);
 });
 
-search.addEventListener("input", (e) => {
-    const rawQ = e.target.value.trim().toLowerCase();
-    searchFormWrapper.classList.toggle("has-text", rawQ.length > 0);
-    if (!rawQ || !isLoaded) { searchSuggestions.classList.remove("open"); return; }
-
-    const queryWords = rawQ.split(/\s+/).filter(Boolean);
-
-    const scoredMatches = videos.map(v => {
-        const titleLower = v.title.toLowerCase();
-        let score = 0;
-        queryWords.forEach(qw => {
-            if (titleLower.includes(qw)) {
-                score += 1;
-                if (titleLower.startsWith(qw)) score += 1;
-            }
-        });
-        return { video: v, score };
-    }).filter(item => item.score > 0);
-
-    scoredMatches.sort((a, b) => b.score - a.score);
-    const matches = scoredMatches.slice(0, 6).map(item => item.video);
-
-    if (!matches.length) { searchSuggestions.classList.remove("open"); return; }
-
-    searchSuggestions.innerHTML = "";
-    matches.forEach(video => {
-        const item = document.createElement("a");
-        item.className = "suggestion-item";
-        item.href = `index.html?q=${encodeURIComponent(video.title)}`;
-        item.innerHTML = `🔍 <span>${video.title}</span>`;
-        item.addEventListener("click", (e) => {
-            e.preventDefault();
-            triggerSearch(video.title);
-            searchSuggestions.classList.remove("open");
-        });
-        searchSuggestions.appendChild(item);
+function updateSuggestionFocus() {
+    const items = searchSuggestions.querySelectorAll(".suggestion-item");
+    items.forEach((item, index) => {
+        if (index === selectedSuggestionIndex) {
+            item.classList.add("focused");
+            item.scrollIntoView({ block: "nearest" });
+        } else {
+            item.classList.remove("focused");
+        }
     });
-    searchSuggestions.classList.add("open");
+}
+
+let suggestionRequestId = 0;
+search.addEventListener("input", async (e) => {
+    const rawQ = e.target.value.trim();
+    selectedSuggestionIndex = -1;
+    const requestId = ++suggestionRequestId;
+    searchFormWrapper.classList.toggle("has-text", rawQ.length > 0);
+    if (rawQ.length < 2 || !isLoaded) {
+        searchSuggestions.classList.remove("open");
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({ q: rawQ, limit: "6", offset: "0" });
+        const response = await fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Suggestion API returned ${response.status}`);
+        const data = await response.json();
+        if (requestId !== suggestionRequestId || search.value.trim() !== rawQ) return;
+
+        const matches = Array.isArray(data.items) ? data.items.slice(0, 6) : [];
+        if (!matches.length) {
+            searchSuggestions.classList.remove("open");
+            return;
+        }
+
+        searchSuggestions.innerHTML = "";
+        matches.forEach(video => {
+            const item = document.createElement("a");
+            item.className = "suggestion-item";
+            item.href = `/?q=${encodeURIComponent(video.title || "")}`;
+            item.innerHTML = "🔍 <span></span>";
+            item.querySelector("span").textContent = video.title || "Untitled Video";
+            item.addEventListener("click", (event) => {
+                event.preventDefault();
+                triggerSearch(video.title || rawQ);
+                searchSuggestions.classList.remove("open");
+            });
+            searchSuggestions.appendChild(item);
+        });
+        searchSuggestions.classList.add("open");
+    } catch (error) {
+        console.error("Suggestion search failed:", error);
+        if (requestId === suggestionRequestId) searchSuggestions.classList.remove("open");
+    }
+});
+
+search.addEventListener("keydown", (e) => {
+    const items = searchSuggestions.querySelectorAll(".suggestion-item");
+    if (!searchSuggestions.classList.contains("open") || !items.length) return;
+
+    if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
+        updateSuggestionFocus();
+    } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
+        updateSuggestionFocus();
+    } else if (e.key === "Escape") {
+        searchSuggestions.classList.remove("open");
+        selectedSuggestionIndex = -1;
+    } else if (e.key === "Enter" && selectedSuggestionIndex >= 0) {
+        e.preventDefault();
+        items[selectedSuggestionIndex].click();
+    }
 });
 
 searchForm.addEventListener("submit", (e) => {
@@ -1232,10 +1342,13 @@ searchCancel.addEventListener("click", () => {
     searchSuggestions.classList.remove("open");
 });
 
-randomButton.addEventListener("click", () => {
-    if (videos.length === 0) return;
-    const randomVideo = videos[Math.floor(Math.random() * videos.length)];
-    window.location.href = `second.html?id=${encodeURIComponent(randomVideo.id)}`;
+randomButton.addEventListener("click", async () => {
+    try {
+        const response = await fetch(`${API_BASE}/api/videos?random=1`, { cache: "no-store" });
+        if (!response.ok) throw new Error("Random video request failed");
+        const data = await response.json();
+        if (data.item) window.location.href = makeVideoPageUrl(data.item);
+    } catch (err) { console.error(err); status.textContent = "Could not load a random video."; }
 });
 
 loadVideos();
