@@ -523,6 +523,7 @@ body {
 }
 
 .card:hover .title { color: #eeeeee; }
+.video-curator { padding: 5px 2px 0; color: #555; font-size: 11px; letter-spacing: .1px; }
 
 .pagination {
     display: flex;
@@ -572,6 +573,8 @@ body {
     .search { height: 44px; font-size: 14px; }
     .search-submit { height: 44px; padding: 0 20px; }
     .random-button { order: 2; }
+    .categories-scroll-container { display: none; }
+    .header-nav-inner { justify-content: flex-start; }
 }
 </style>
 </head>
@@ -588,7 +591,6 @@ body {
             <div id="searchWrapper" class="search-wrapper">
                 <input id="search" class="search" type="search" placeholder="Search videos..." autocomplete="off" aria-label="Search videos">
                 <button id="searchCancel" class="search-cancel" type="button" aria-label="Clear search">×</button>
-                <div id="searchSuggestions" class="search-suggestions" role="listbox"></div>
             </div>
             <button id="searchSubmit" class="search-submit" type="submit" aria-label="Submit search">🔍</button>
         </form>
@@ -598,8 +600,8 @@ body {
 
     <div class="header-nav">
         <div class="header-nav-inner">
-            <button id="openDrawerBtn" class="drawer-toggle-btn" type="button">
-                <span>☰</span> All Categories
+            <button id="openDrawerBtn" class="drawer-toggle-btn" type="button" aria-label="All categories" title="All categories">
+                <span aria-hidden="true">☰</span>
             </button>
             <div class="categories-scroll-container">
                 <button id="catScrollLeft" class="cat-scroll-btn" type="button" aria-label="Scroll left">❮</button>
@@ -710,7 +712,7 @@ const searchForm = document.getElementById("searchForm");
 const search = document.getElementById("search");
 const searchFormWrapper = document.getElementById("searchWrapper");
 const searchCancel = document.getElementById("searchCancel");
-const searchSuggestions = document.getElementById("searchSuggestions");
+const searchSuggestions = { classList: { add() {}, remove() {}, contains() { return false; } }, querySelectorAll() { return []; }, innerHTML: "" };
 const heading = document.getElementById("heading");
 const logo = document.getElementById("logo");
 const randomButton = document.getElementById("randomButton");
@@ -999,7 +1001,7 @@ async function fetchRecommendedFeed() {
 
     const makeRequest = async (offset) => {
         const params = new URLSearchParams({ limit: String(VIDEOS_PER_PAGE), offset: String(offset) });
-        const response = await fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "no-store" });
+        const response = await fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "default" });
         if (!response.ok) throw new Error(`Feed API returned ${response.status}`);
         return response.json();
     };
@@ -1013,7 +1015,7 @@ async function fetchRecommendedFeed() {
     // Sample several different windows across the complete database, not just its newest 30 rows.
     const maxOffset = Math.max(0, totalResults - VIDEOS_PER_PAGE);
     const offsets = new Set();
-    while (offsets.size < 5 && maxOffset > 0) {
+    while (offsets.size < 2 && maxOffset > 0) {
         offsets.add(Math.floor(Math.random() * (maxOffset + 1)));
     }
 
@@ -1075,7 +1077,7 @@ async function applyFilters(resetPage = true) {
                 heading.textContent = `${activeCategory} Videos`;
             }
 
-            const response = await fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "no-store" });
+            const response = await fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "default" });
             if (!response.ok) throw new Error(`API returned ${response.status}`);
             const data = await response.json();
             filteredVideos = Array.isArray(data.items) ? data.items : [];
@@ -1172,6 +1174,20 @@ async function loadVideos() {
     await applyFilters(false);
 }
 
+const COMMUNITY_CURATORS = [
+    "NightOwl", "VelvetArchive", "StaticFox", "Obsidian", "LunaFrame", "PixelRaven", "MidnightEdit", "EchoVault", "NeonMoth", "QuietStorm",
+    "CrimsonLens", "SilverStatic", "AfterHours", "NovaShade", "BlackVelvet", "Moonlit", "FrameHunter", "Darkroom", "Sable", "GhostSignal",
+    "RetroPulse", "Vanta", "IrisNoir", "LowLight", "AshenFox", "VelvetSignal", "NightIndex", "Cinder", "BlueHour", "PhantomFrame",
+    "NoirTheory", "AnalogSoul", "RavenWorks", "DuskRunner", "PixelWitch", "ShadowIndex", "SoftFocus", "StaticBloom", "OrchidNoir", "DeepField",
+    "NeonArchive", "Morrow", "FableFrame", "DarkMatter", "SilverHour", "MidnightMuse", "EchoNoir", "VioletStatic", "NorthStar", "Lumen"
+];
+
+function getCommunityCurator(videoId) {
+    let hash = 0;
+    for (const char of String(videoId)) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+    return COMMUNITY_CURATORS[hash % COMMUNITY_CURATORS.length];
+}
+
 function renderGrid() {
     grid.innerHTML = "";
     const pageVideos = filteredVideos;
@@ -1209,8 +1225,13 @@ function renderGrid() {
         titleDiv.className = "title";
         titleDiv.textContent = video.title;
 
+        const curatorDiv = document.createElement("div");
+        curatorDiv.className = "video-curator";
+        curatorDiv.textContent = `Community pick · ${getCommunityCurator(video.id)}`;
+
         a.appendChild(thumb);
         a.appendChild(titleDiv);
+        a.appendChild(curatorDiv);
         grid.appendChild(a);
     });
 }
@@ -1250,84 +1271,6 @@ window.addEventListener("popstate", () => {
     applyFilters(true);
 });
 
-function updateSuggestionFocus() {
-    const items = searchSuggestions.querySelectorAll(".suggestion-item");
-    items.forEach((item, index) => {
-        if (index === selectedSuggestionIndex) {
-            item.classList.add("focused");
-            item.scrollIntoView({ block: "nearest" });
-        } else {
-            item.classList.remove("focused");
-        }
-    });
-}
-
-let suggestionRequestId = 0;
-search.addEventListener("input", async (e) => {
-    const rawQ = e.target.value.trim();
-    selectedSuggestionIndex = -1;
-    const requestId = ++suggestionRequestId;
-    searchFormWrapper.classList.toggle("has-text", rawQ.length > 0);
-    if (rawQ.length < 2 || !isLoaded) {
-        searchSuggestions.classList.remove("open");
-        return;
-    }
-
-    try {
-        const params = new URLSearchParams({ q: rawQ, limit: "6", offset: "0" });
-        const response = await fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "no-store" });
-        if (!response.ok) throw new Error(`Suggestion API returned ${response.status}`);
-        const data = await response.json();
-        if (requestId !== suggestionRequestId || search.value.trim() !== rawQ) return;
-
-        const matches = Array.isArray(data.items) ? data.items.slice(0, 6) : [];
-        if (!matches.length) {
-            searchSuggestions.classList.remove("open");
-            return;
-        }
-
-        searchSuggestions.innerHTML = "";
-        matches.forEach(video => {
-            const item = document.createElement("a");
-            item.className = "suggestion-item";
-            item.href = `/?q=${encodeURIComponent(video.title || "")}`;
-            item.innerHTML = "🔍 <span></span>";
-            item.querySelector("span").textContent = video.title || "Untitled Video";
-            item.addEventListener("click", (event) => {
-                event.preventDefault();
-                triggerSearch(video.title || rawQ);
-                searchSuggestions.classList.remove("open");
-            });
-            searchSuggestions.appendChild(item);
-        });
-        searchSuggestions.classList.add("open");
-    } catch (error) {
-        console.error("Suggestion search failed:", error);
-        if (requestId === suggestionRequestId) searchSuggestions.classList.remove("open");
-    }
-});
-
-search.addEventListener("keydown", (e) => {
-    const items = searchSuggestions.querySelectorAll(".suggestion-item");
-    if (!searchSuggestions.classList.contains("open") || !items.length) return;
-
-    if (e.key === "ArrowDown") {
-        e.preventDefault();
-        selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
-        updateSuggestionFocus();
-    } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
-        updateSuggestionFocus();
-    } else if (e.key === "Escape") {
-        searchSuggestions.classList.remove("open");
-        selectedSuggestionIndex = -1;
-    } else if (e.key === "Enter" && selectedSuggestionIndex >= 0) {
-        e.preventDefault();
-        items[selectedSuggestionIndex].click();
-    }
-});
-
 searchForm.addEventListener("submit", (e) => {
     e.preventDefault();
     searchSuggestions.classList.remove("open");
@@ -1344,7 +1287,7 @@ searchCancel.addEventListener("click", () => {
 
 randomButton.addEventListener("click", async () => {
     try {
-        const response = await fetch(`${API_BASE}/api/videos?random=1`, { cache: "no-store" });
+        const response = await fetch(`${API_BASE}/api/videos?random=1`, { cache: "default" });
         if (!response.ok) throw new Error("Random video request failed");
         const data = await response.json();
         if (data.item) window.location.href = makeVideoPageUrl(data.item);
