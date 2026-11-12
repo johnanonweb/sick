@@ -573,7 +573,9 @@ body {
     .search { height: 44px; font-size: 14px; }
     .search-submit { height: 44px; padding: 0 20px; }
     .random-button { order: 2; }
-    .categories-scroll-container { display: none; }
+    .categories-scroll-container { display: flex; width: 100%; }
+    .cat-scroll-btn { display: none; }
+    .popular-categories { min-width: 0; width: 100%; }
     .header-nav-inner { justify-content: flex-start; }
 }
 </style>
@@ -993,11 +995,32 @@ function triggerSearch(query) {
 
 async function fetchRecommendedFeed() {
     const seenKey = "sf_seen_feed_ids";
+    const poolKey = "sf_recommended_feed_pool";
     let seen = new Set();
+    let pool = [];
     try {
         seen = new Set(JSON.parse(sessionStorage.getItem(seenKey) || "[]").map(String));
     } catch (_) {}
-    if (currentPage === 1) seen.clear();
+
+    if (currentPage === 1) {
+        seen.clear();
+        try { sessionStorage.removeItem(poolKey); } catch (_) {}
+    } else {
+        try {
+            pool = JSON.parse(sessionStorage.getItem(poolKey) || "[]");
+            if (!Array.isArray(pool)) pool = [];
+        } catch (_) { pool = []; }
+
+        // Reuse the unused recommendations already fetched for the previous page.
+        // This makes normal page-to-page navigation local instead of waiting for new API calls.
+        if (pool.length >= VIDEOS_PER_PAGE) {
+            const pageVideos = pool.slice(0, VIDEOS_PER_PAGE);
+            try { sessionStorage.setItem(poolKey, JSON.stringify(pool.slice(VIDEOS_PER_PAGE))); } catch (_) {}
+            pageVideos.forEach(video => seen.add(String(video.id)));
+            try { sessionStorage.setItem(seenKey, JSON.stringify([...seen].slice(-3000))); } catch (_) {}
+            return pageVideos;
+        }
+    }
 
     const makeRequest = async (offset) => {
         const params = new URLSearchParams({ limit: String(VIDEOS_PER_PAGE), offset: String(offset) });
@@ -1006,31 +1029,26 @@ async function fetchRecommendedFeed() {
         return response.json();
     };
 
+    const candidateMap = new Map();
+    pool.forEach(video => candidateMap.set(String(video.id), video));
+
     const latestData = await makeRequest(0);
     totalResults = Number(latestData.total || 0);
     const latestVideos = Array.isArray(latestData.items) ? latestData.items : [];
-    const candidateMap = new Map();
     latestVideos.forEach(video => candidateMap.set(String(video.id), video));
 
-    // Sample several different windows across the complete database, not just its newest 30 rows.
+    // Two random windows are fetched in parallel with the latest page to create a varied pool.
     const maxOffset = Math.max(0, totalResults - VIDEOS_PER_PAGE);
     const offsets = new Set();
-    while (offsets.size < 2 && maxOffset > 0) {
-        offsets.add(Math.floor(Math.random() * (maxOffset + 1)));
-    }
-
+    while (offsets.size < 2 && maxOffset > 0) offsets.add(Math.floor(Math.random() * (maxOffset + 1)));
     const sampledPages = await Promise.all([...offsets].map(makeRequest));
-    sampledPages.forEach(page => {
-        (page.items || []).forEach(video => candidateMap.set(String(video.id), video));
-    });
+    sampledPages.forEach(page => (page.items || []).forEach(video => candidateMap.set(String(video.id), video)));
 
-    let ranked = getPersonalizedFeed([...candidateMap.values()], latestVideos);
-    ranked = ranked.filter(video => !seen.has(String(video.id)));
+    let ranked = getPersonalizedFeed([...candidateMap.values()], latestVideos)
+        .filter(video => !seen.has(String(video.id)));
 
-    // If a sampled window overlaps a previous page heavily, sample more windows until the page is filled.
-    let attempts = 0;
-    while (ranked.length < VIDEOS_PER_PAGE && attempts < 5 && maxOffset > 0) {
-        attempts++;
+    // Keep any unused candidates for the next numbered page.
+    if (ranked.length < VIDEOS_PER_PAGE && maxOffset > 0) {
         const extraOffset = Math.floor(Math.random() * (maxOffset + 1));
         const extraPage = await makeRequest(extraOffset);
         (extraPage.items || []).forEach(video => {
@@ -1042,13 +1060,14 @@ async function fetchRecommendedFeed() {
     }
 
     const pageVideos = ranked.slice(0, VIDEOS_PER_PAGE);
-    pageVideos.forEach(video => seen.add(String(video.id)));
+    const remainingPool = ranked.slice(VIDEOS_PER_PAGE);
     try {
+        sessionStorage.setItem(poolKey, JSON.stringify(remainingPool));
+        pageVideos.forEach(video => seen.add(String(video.id)));
         sessionStorage.setItem(seenKey, JSON.stringify([...seen].slice(-3000)));
     } catch (_) {}
     return pageVideos;
 }
-
 async function applyFilters(resetPage = true) {
     if (!isLoaded) return;
     if (resetPage) currentPage = 1;
