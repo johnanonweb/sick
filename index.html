@@ -570,7 +570,7 @@ body {
         max-width: 100%;
         margin-top: 2px;
     }
-    .search { height: 44px; font-size: 14px; }
+    .search { height: 44px; font-size: 16px; }
     .search-submit { height: 44px; padding: 0 20px; }
     .random-button { order: 2; }
     .categories-scroll-container { display: flex; width: 100%; }
@@ -744,6 +744,50 @@ let currentPage = 1;
 let fuseInstance = null;
 let isLoaded = false;
 let totalResults = 0;
+const listingPageCache = new Map();
+const listingPageRequests = new Map();
+
+function getListingCacheKey(query, category, page) {
+    return `${query ? `q:${query.toLowerCase()}` : `cat:${category}`}|page:${page}`;
+}
+
+async function fetchListingPage(query, category, page) {
+    const key = getListingCacheKey(query, category, page);
+    if (listingPageCache.has(key)) return listingPageCache.get(key);
+    if (listingPageRequests.has(key)) return listingPageRequests.get(key);
+
+    const params = new URLSearchParams({
+        limit: String(VIDEOS_PER_PAGE),
+        offset: String((page - 1) * VIDEOS_PER_PAGE)
+    });
+    if (query) params.set("q", query);
+    else if (category && category !== "All") params.set("cat", category);
+
+    const request = fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "default" })
+        .then(response => {
+            if (!response.ok) throw new Error(`API returned ${response.status}`);
+            return response.json();
+        })
+        .then(data => {
+            listingPageCache.set(key, data);
+            // Bound memory use when users browse many search/category pages.
+            if (listingPageCache.size > 12) listingPageCache.delete(listingPageCache.keys().next().value);
+            return data;
+        })
+        .finally(() => listingPageRequests.delete(key));
+
+    listingPageRequests.set(key, request);
+    return request;
+}
+
+function prefetchNextListingPage() {
+    if (!activeSearchQuery && (!activeCategory || activeCategory === "All")) return;
+    const totalPages = Math.ceil(totalResults / VIDEOS_PER_PAGE);
+    const nextPage = currentPage + 1;
+    if (nextPage > totalPages) return;
+    // Fetch quietly after rendering the current page so the next click is usually instant.
+    fetchListingPage(activeSearchQuery, activeCategory, nextPage).catch(() => {});
+}
 
 function applySEOForContext(catName, searchQuery) {
     let titleText = "Sick Fetish - Video Archive";
@@ -974,6 +1018,7 @@ function renderCategoryNavs() {
 }
 
 function selectCategory(catName) {
+    listingPageCache.clear();
     activeCategory = catName;
     activeSearchQuery = "";
     search.value = "";
@@ -985,6 +1030,7 @@ function selectCategory(catName) {
 function triggerSearch(query) {
     const cleanQ = query.trim();
     if (!cleanQ) return;
+    listingPageCache.clear();
     activeSearchQuery = cleanQ;
     activeCategory = "All";
     search.value = cleanQ;
@@ -994,8 +1040,8 @@ function triggerSearch(query) {
 }
 
 async function fetchRecommendedFeed() {
-    const seenKey = "sf_seen_feed_ids";
-    const poolKey = "sf_recommended_feed_pool";
+    const seenKey = "sf_seen_feed_ids_v3";
+    const poolKey = "sf_recommended_feed_pool_v3";
     let seen = new Set();
     let pool = [];
     try {
@@ -1044,7 +1090,7 @@ async function fetchRecommendedFeed() {
     const sampledPages = await Promise.all([...offsets].map(makeRequest));
     sampledPages.forEach(page => (page.items || []).forEach(video => candidateMap.set(String(video.id), video)));
 
-    let ranked = getPersonalizedFeed([...candidateMap.values()], latestVideos)
+    let ranked = shuffle(getPersonalizedFeed([...candidateMap.values()], latestVideos))
         .filter(video => !seen.has(String(video.id)));
 
     // Keep any unused candidates for the next numbered page.
@@ -1055,7 +1101,7 @@ async function fetchRecommendedFeed() {
             const id = String(video.id);
             if (!candidateMap.has(id)) candidateMap.set(id, video);
         });
-        ranked = getPersonalizedFeed([...candidateMap.values()], latestVideos)
+        ranked = shuffle(getPersonalizedFeed([...candidateMap.values()], latestVideos))
             .filter(video => !seen.has(String(video.id)));
     }
 
@@ -1083,23 +1129,16 @@ async function applyFilters(resetPage = true) {
             heading.textContent = "Recommended For You";
             filteredVideos = await fetchRecommendedFeed();
         } else {
-            const params = new URLSearchParams({
-                limit: String(VIDEOS_PER_PAGE),
-                offset: String((currentPage - 1) * VIDEOS_PER_PAGE)
-            });
             if (activeSearchQuery) {
-                params.set("q", activeSearchQuery);
                 addRecentSearch(activeSearchQuery);
                 heading.textContent = `Search: "${activeSearchQuery}"`;
             } else {
-                params.set("cat", activeCategory);
                 heading.textContent = `${activeCategory} Videos`;
             }
 
-            const response = await fetch(`${API_BASE}/api/videos?${params.toString()}`, { cache: "default" });
-            if (!response.ok) throw new Error(`API returned ${response.status}`);
-            const data = await response.json();
-            filteredVideos = Array.isArray(data.items) ? data.items : [];
+            const data = await fetchListingPage(activeSearchQuery, activeCategory, currentPage);
+            // Randomize the order within every search/category page on each fresh visit.
+            filteredVideos = shuffle(Array.isArray(data.items) ? data.items : []);
             totalResults = Number(data.total || 0);
         }
 
@@ -1109,6 +1148,7 @@ async function applyFilters(resetPage = true) {
         renderCategoryNavs();
         renderGrid();
         renderPagination();
+        prefetchNextListingPage();
     } catch (err) {
         console.error("Bunny API error:", err);
         loader.style.display = "none";
