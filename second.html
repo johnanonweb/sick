@@ -480,6 +480,10 @@ body {
     gap: 16px;
 }
 
+.video-heading-group { min-width: 0; flex: 1; }
+.video-curator { margin-top: 7px; color: #666; font-size: 12px; }
+.video-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.report-btn { text-decoration: none; display: inline-flex; align-items: center; }
 .video-title {
     margin: 0;
     font-size: 20px;
@@ -598,7 +602,11 @@ body {
 
 @media (max-width:650px) {
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .video-title { font-size: 16px; }
+    .video-heading-group { min-width: 0; flex: 1; }
+.video-curator { margin-top: 7px; color: #666; font-size: 12px; }
+.video-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.report-btn { text-decoration: none; display: inline-flex; align-items: center; }
+.video-title { font-size: 16px; }
     .header-top {
         flex-wrap: wrap;
         justify-content: space-between;
@@ -615,6 +623,8 @@ body {
     .search { height: 44px; font-size: 14px; }
     .search-submit { height: 44px; padding: 0 20px; }
     .random-button { order: 2; }
+    .categories-scroll-container { display: none; }
+    .header-nav-inner { justify-content: flex-start; }
 }
 </style>
 </head>
@@ -631,7 +641,6 @@ body {
             <div id="searchWrapper" class="search-wrapper">
                 <input id="search" class="search" type="search" placeholder="Search videos..." autocomplete="off" aria-label="Search videos">
                 <button id="searchCancel" class="search-cancel" type="button" aria-label="Clear search">×</button>
-                <div id="searchSuggestions" class="search-suggestions" role="listbox"></div>
             </div>
             <button id="searchSubmit" class="search-submit" type="submit" aria-label="Submit search">🔍</button>
         </form>
@@ -641,8 +650,8 @@ body {
 
     <div class="header-nav">
         <div class="header-nav-inner">
-            <button id="openDrawerBtn" class="drawer-toggle-btn" type="button">
-                <span>☰</span> All Categories
+            <button id="openDrawerBtn" class="drawer-toggle-btn" type="button" aria-label="All categories" title="All categories">
+                <span aria-hidden="true">☰</span>
             </button>
             <div class="categories-scroll-container">
                 <button id="catScrollLeft" class="cat-scroll-btn" type="button" aria-label="Scroll left">❮</button>
@@ -675,8 +684,14 @@ body {
     </div>
 
     <div class="video-info">
-        <h1 id="videoTitle" class="video-title">Loading video details...</h1>
-        <button id="shareBtn" class="share-btn" type="button">🔗 Share Link</button>
+        <div class="video-heading-group">
+            <h1 id="videoTitle" class="video-title">Loading video details...</h1>
+            <div id="videoCurator" class="video-curator">Community pick</div>
+        </div>
+        <div class="video-actions">
+            <button id="shareBtn" class="share-btn" type="button">🔗 Share Link</button>
+            <a id="reportBtn" class="share-btn report-btn" href="#" rel="nofollow">Report / DMCA</a>
+        </div>
     </div>
 
     <section class="related-section">
@@ -744,7 +759,7 @@ const searchForm = document.getElementById("searchForm");
 const search = document.getElementById("search");
 const searchFormWrapper = document.getElementById("searchWrapper");
 const searchCancel = document.getElementById("searchCancel");
-const searchSuggestions = document.getElementById("searchSuggestions");
+const searchSuggestions = { classList: { add() {}, remove() {}, contains() { return false; } }, querySelectorAll() { return []; }, innerHTML: "" };
 
 const openDrawerBtn = document.getElementById("openDrawerBtn");
 const closeDrawerBtn = document.getElementById("closeDrawerBtn");
@@ -1041,8 +1056,13 @@ function renderRecommendations(list) {
         titleDiv.className = "title";
         titleDiv.textContent = video.title;
 
+        const curatorDiv = document.createElement("div");
+        curatorDiv.className = "video-curator";
+        curatorDiv.textContent = `Community pick · ${getCommunityCurator(video.id)}`;
+
         a.appendChild(thumb);
         a.appendChild(titleDiv);
+        a.appendChild(curatorDiv);
         grid.appendChild(a);
     });
 }
@@ -1057,6 +1077,21 @@ function makeVideoPageUrl(video, extraParams = {}) {
     });
     return target.pathname + target.search;
 }
+
+const COMMUNITY_CURATORS = [
+    "NightOwl", "VelvetArchive", "StaticFox", "Obsidian", "LunaFrame", "PixelRaven", "MidnightEdit", "EchoVault", "NeonMoth", "QuietStorm",
+    "CrimsonLens", "SilverStatic", "AfterHours", "NovaShade", "BlackVelvet", "Moonlit", "FrameHunter", "Darkroom", "Sable", "GhostSignal",
+    "RetroPulse", "Vanta", "IrisNoir", "LowLight", "AshenFox", "VelvetSignal", "NightIndex", "Cinder", "BlueHour", "PhantomFrame",
+    "NoirTheory", "AnalogSoul", "RavenWorks", "DuskRunner", "PixelWitch", "ShadowIndex", "SoftFocus", "StaticBloom", "OrchidNoir", "DeepField",
+    "NeonArchive", "Morrow", "FableFrame", "DarkMatter", "SilverHour", "MidnightMuse", "EchoNoir", "VioletStatic", "NorthStar", "Lumen"
+];
+
+function getCommunityCurator(videoId) {
+    let hash = 0;
+    for (const char of String(videoId)) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+    return COMMUNITY_CURATORS[hash % COMMUNITY_CURATORS.length];
+}
+
 
 async function initWatchPage() {
     const params = new URLSearchParams(window.location.search);
@@ -1075,7 +1110,7 @@ async function initWatchPage() {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/api/videos/${encodeURIComponent(videoId)}`, { cache: "no-store" });
+        const response = await fetch(`${API_BASE}/api/videos/${encodeURIComponent(videoId)}`, { cache: "default" });
         if (!response.ok) throw new Error(`Video API returned ${response.status}`);
         const data = await response.json();
         if (!data.item) throw new Error("Video not found");
@@ -1108,6 +1143,11 @@ async function initWatchPage() {
         renderCategoryNavs();
         updateMetaTags(targetVideo);
         videoTitle.textContent = targetVideo.title;
+        document.getElementById("videoCurator").textContent = `Community pick · ${getCommunityCurator(targetVideo.id)}`;
+        const reportLink = document.getElementById("reportBtn");
+        const reportSubject = encodeURIComponent(`Content report / DMCA notice - video ${targetVideo.id}`);
+        const reportBody = encodeURIComponent(`Please review this video.\n\nVideo URL: ${window.location.href}\nVideo title: ${targetVideo.title}\n\nReason for report (describe the issue):\n\nFor copyright/DMCA notices, include your full name, contact details, identification of the copyrighted work, the specific URL, and the required good-faith and accuracy statements.`);
+        reportLink.href = `mailto:reports@example.com?subject=${reportSubject}&body=${reportBody}`;
         videoIframe.src = targetVideo.embedUrl;
         recordWatchHistory(targetVideo.title);
 
@@ -1120,7 +1160,7 @@ async function initWatchPage() {
             }
         });
 
-        const relatedResponse = await fetch(`${API_BASE}/api/videos/${encodeURIComponent(videoId)}/related`, { cache: "no-store" });
+        const relatedResponse = await fetch(`${API_BASE}/api/videos/${encodeURIComponent(videoId)}/related`, { cache: "default" });
         if (!relatedResponse.ok) throw new Error("Could not load recommendations");
         const relatedData = await relatedResponse.json();
         const recommendations = (relatedData.items || []).map(v => ({
@@ -1135,79 +1175,6 @@ async function initWatchPage() {
         videoTitle.textContent = "Could not load this video. Check the database connection.";
     }
 }
-
-function updateSuggestionFocus() {
-    const items = searchSuggestions.querySelectorAll(".suggestion-item");
-    items.forEach((item, index) => {
-        if (index === selectedSuggestionIndex) {
-            item.classList.add("focused");
-            item.scrollIntoView({ block: "nearest" });
-        } else {
-            item.classList.remove("focused");
-        }
-    });
-}
-
-search.addEventListener("input", (e) => {
-    const rawQ = e.target.value.trim().toLowerCase();
-    selectedSuggestionIndex = -1;
-    searchFormWrapper.classList.toggle("has-text", rawQ.length > 0);
-    if (!rawQ || !allVideos.length) { searchSuggestions.classList.remove("open"); return; }
-    
-    const queryWords = rawQ.split(/\s+/).filter(Boolean);
-
-    const scoredMatches = allVideos.map(v => {
-        const titleLower = v.title.toLowerCase();
-        let score = 0;
-        queryWords.forEach(qw => {
-            if (titleLower.includes(qw)) {
-                score += 1;
-                if (titleLower.startsWith(qw)) score += 1;
-            }
-        });
-        return { video: v, score };
-    }).filter(item => item.score > 0);
-
-    scoredMatches.sort((a, b) => b.score - a.score);
-    const matches = scoredMatches.slice(0, 6).map(item => item.video);
-
-    if (!matches.length) { searchSuggestions.classList.remove("open"); return; }
-
-    searchSuggestions.innerHTML = "";
-    matches.forEach(video => {
-        const item = document.createElement("a");
-        item.className = "suggestion-item";
-        item.href = `/?q=${encodeURIComponent(video.title)}`;
-        item.innerHTML = `🔍 <span>${video.title}</span>`;
-        item.addEventListener("click", (e) => {
-            e.preventDefault();
-            navigateToArchive(video.title, null);
-        });
-        searchSuggestions.appendChild(item);
-    });
-    searchSuggestions.classList.add("open");
-});
-
-search.addEventListener("keydown", (e) => {
-    const items = searchSuggestions.querySelectorAll(".suggestion-item");
-    if (!searchSuggestions.classList.contains("open") || !items.length) return;
-
-    if (e.key === "ArrowDown") {
-        e.preventDefault();
-        selectedSuggestionIndex = (selectedSuggestionIndex + 1) % items.length;
-        updateSuggestionFocus();
-    } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        selectedSuggestionIndex = (selectedSuggestionIndex - 1 + items.length) % items.length;
-        updateSuggestionFocus();
-    } else if (e.key === "Escape") {
-        searchSuggestions.classList.remove("open");
-        selectedSuggestionIndex = -1;
-    } else if (e.key === "Enter" && selectedSuggestionIndex >= 0) {
-        e.preventDefault();
-        items[selectedSuggestionIndex].click();
-    }
-});
 
 searchForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -1226,7 +1193,7 @@ searchCancel.addEventListener("click", () => {
 
 randomButton.addEventListener("click", async () => {
     try {
-        const response = await fetch(`${API_BASE}/api/videos?random=1`, { cache: "no-store" });
+        const response = await fetch(`${API_BASE}/api/videos?random=1`, { cache: "default" });
         if (!response.ok) throw new Error("Random video request failed");
         const data = await response.json();
         if (data.item) window.location.href = makeVideoPageUrl(data.item);
