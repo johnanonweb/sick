@@ -1046,12 +1046,15 @@ function renderRecommendations(list) {
 
         const thumb = document.createElement("div");
         thumb.className = "thumbnail";
+        if (video.thumbnailWidth && video.thumbnailHeight) {
+            thumb.style.aspectRatio = `${Number(video.thumbnailWidth)} / ${Number(video.thumbnailHeight)}`;
+        }
         if (video.thumbnailUrl) {
             const img = document.createElement("img");
             img.src = video.thumbnailUrl;
             img.alt = video.title;
-            img.width = 264;
-            img.height = 198;
+            img.width = Number(video.thumbnailWidth) || 264;
+            img.height = Number(video.thumbnailHeight) || 198;
             img.loading = "lazy";
             img.onerror = () => { img.onerror = null; img.src = FALLBACK_IMAGE; };
             thumb.appendChild(img);
@@ -1147,6 +1150,8 @@ async function initWatchPage() {
             title: String(data.item.title || (parsedVideo && parsedVideo.title) || "Untitled Video"),
             embedUrl: safeEmbedUrl.href,
             thumbnailUrl: data.item.thumbnailUrl || (parsedVideo && parsedVideo.thumbnailUrl) || FALLBACK_IMAGE,
+            thumbnailWidth: Number(data.item.thumbnailWidth) || undefined,
+            thumbnailHeight: Number(data.item.thumbnailHeight) || undefined,
             sourceUrl: data.item.sourceUrl || (parsedVideo && parsedVideo.sourceUrl) || ""
         };
 
@@ -1176,7 +1181,8 @@ async function initWatchPage() {
         const relatedData = await relatedResponse.json();
         const recommendations = (relatedData.items || []).map(v => ({
             id: String(v.id), title: v.title, embedUrl: v.embedUrl,
-            thumbnailUrl: v.thumbnailUrl, sourceUrl: v.sourceUrl, sourceId: v.sourceId
+            thumbnailUrl: v.thumbnailUrl, thumbnailWidth: v.thumbnailWidth, thumbnailHeight: v.thumbnailHeight,
+            sourceUrl: v.sourceUrl, sourceId: v.sourceId
         }));
         allVideos = [targetVideo, ...recommendations];
         renderRecommendations(recommendations);
