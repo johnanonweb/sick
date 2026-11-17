@@ -5,12 +5,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#050505">
-<meta name="description" content="Sick Fetish - Browse curated videos and categories.">
+<meta name="description" content="Sick Fetish video archive - Browse curated videos and categories.">
 <link rel="canonical" href="/">
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-<title>Sick Fetish</title>
+<title>Sick Fetish Video Archive</title>
 
 <style>
 * { box-sizing: border-box; }
@@ -1272,12 +1272,15 @@ function renderGrid() {
 
         const thumb = document.createElement("div");
         thumb.className = "thumbnail";
+        if (video.thumbnailWidth && video.thumbnailHeight) {
+            thumb.style.aspectRatio = `${Number(video.thumbnailWidth)} / ${Number(video.thumbnailHeight)}`;
+        }
         if (video.thumbnailUrl) {
             const img = document.createElement("img");
             img.src = video.thumbnailUrl;
             img.alt = video.title;
-            img.width = 264;
-            img.height = 198;
+            img.width = Number(video.thumbnailWidth) || 264;
+            img.height = Number(video.thumbnailHeight) || 198;
             img.loading = "lazy";
             img.onerror = () => { img.onerror = null; img.src = FALLBACK_IMAGE; };
             thumb.appendChild(img);
